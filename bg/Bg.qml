@@ -119,6 +119,7 @@ PanelWindow {
 
     // ---- layer 3 (near): Milk-Chan, main monitor only ----
     MilkChan {
+        id: bgWarp
         readonly property var main: bg.mainScreen()
         visible: (modelData?.width === main?.width) && main != null
                 && RoomState.girlVisible
@@ -135,8 +136,20 @@ PanelWindow {
             rightMargin: parent.width * 0.08
         }
 
-        transform: Translate {
-            x: bg.layerX(1.6)
+        // vertical parallax = WARP, not translate: lean (shear) + slight
+        // foreshorten, feet pinned to the bottom edge. driven by bg.smoothY.
+        readonly property real vNorm: bg.overscanY > 0
+            ? bg.smoothY / bg.overscanY : 0      // [-0.5..0.5]
+        readonly property real warpSkew: -vNorm * 0.10          // lean
+        readonly property real warpSquash: 1 - Math.abs(vNorm) * 0.18  // foreshorten
+        readonly property real footH: height
+
+        transform: Matrix4x4 {
+            matrix: Qt.matrix4x4(
+                1, bgWarp.warpSkew, 0, bg.layerX(1.6) - bgWarp.warpSkew * bgWarp.footH,
+                0, bgWarp.warpSquash, 0, bgWarp.footH * (1 - bgWarp.warpSquash),
+                0, 0, 1, 0,
+                0, 0, 0, 1)
         }
 
         MouseArea {
