@@ -24,23 +24,31 @@ Item {
     }
     function bodySrc(p, e, v) {
         const m = wrap(p, e, v);
+        if (!m)
+            return "";
         const vv = (m?.bodies ?? []).includes(v) ? v : (m?.bodies?.[0] ?? 1);
         return `../assets/sprites/${p}/${e}/${e}_${vv}.png`;
     }
     function eyesOpenSrc(p, e, v) {
         const m = wrap(p, e, v);
+        if (!m)
+            return "";
         const vv = (m?.bodies ?? []).includes(v) ? v : (m?.bodies?.[0] ?? 1);
         return (m?.eyes[String(vv)] ?? []).includes("open")
             ? `../assets/sprites/${p}/${e}/${e}_${vv}_eyes_open.png` : "";
     }
     function eyesHalfSrc(p, e, v) {
         const m = wrap(p, e, v);
+        if (!m)
+            return "";
         const vv = (m?.bodies ?? []).includes(v) ? v : (m?.bodies?.[0] ?? 1);
         return (m?.eyes[String(vv)] ?? []).includes("half")
             ? `../assets/sprites/${p}/${e}/${e}_${vv}_eyes_half.png` : "";
     }
     function eyesClosedSrc(p, e, v) {
         const m = wrap(p, e, v);
+        if (!m)
+            return "";
         const vv = (m?.bodies ?? []).includes(v) ? v : (m?.bodies?.[0] ?? 1);
         return (m?.eyes[String(vv)] ?? []).length > 0
             ? `../assets/sprites/${p}/${e}/${e}_eyes_closed.png` : "";
@@ -52,7 +60,10 @@ Item {
         return "";
     }
     function mouthSrc(p, e, phase) {
-        const mouths = wrap(p, e, 0)?.mouths ?? [];
+        const m = wrap(p, e, 0);
+        if (!m)
+            return "";
+        const mouths = m.mouths ?? [];
         if (phase === "closed")
             return mouths.includes("closed")
                 ? `../assets/sprites/${p}/${e}/${e}_mouth_closed.png`
