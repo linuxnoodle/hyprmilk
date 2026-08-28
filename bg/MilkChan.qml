@@ -79,99 +79,35 @@ Item {
         return "";
     }
 
-    // ---- live frame (new pose during a crossfade) ----
-    property real fadeOpacity: 1.0
-    Behavior on fadeOpacity {
-        NumberAnimation { duration: 110; easing.type: Easing.InOutQuad }
-    }
-
-    Timer {
-        id: fadeIn
-        interval: 130   // after old has dropped out, bring the new in
-        onTriggered: root.fadeOpacity = 1
-    }
-
-    // ---- ghost of the previous pose, faded out during the crossfade ----
-    property string oldPose: ""
-    property string oldEmotion: ""
-    property int oldVariant: 1
-    property string oldEyesPhase: "open"
-    property string oldMouthPhase: "closed"
-    property real ghostOpacity: 0
-    Behavior on ghostOpacity {
-        NumberAnimation { duration: 260; easing.type: Easing.InOutQuad }
-    }
-    Timer {
-        id: ghostDrop
-        interval: 270
-        onTriggered: root.ghostOpacity = 0
-    }
 
     implicitWidth: 1959 * scale
     implicitHeight: 1027 * scale
 
-    Item {
-        opacity: root.fadeOpacity
+    Image {
         anchors.fill: parent
-
-        Image {
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
-            smooth: false
-            cache: false
-            source: root.bodySrc(root.pose, root.emotion, root.variant)
-        }
-        Image {
-            id: eyes
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
-            smooth: false
-            cache: false
-            property string phase: "open"
-            visible: root.eyesOpenSrc(root.pose, root.emotion, root.variant) !== ""
-            source: root.eyesPhaseSrc(root.pose, root.emotion, root.variant, phase)
-        }
-        Image {
-            id: mouth
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
-            smooth: false
-            cache: false
-            property string phase: "closed"
-            source: root.mouthSrc(root.pose, root.emotion, phase)
-        }
+        fillMode: Image.PreserveAspectFit
+        smooth: false
+        cache: false
+        source: root.bodySrc(root.pose, root.emotion, root.variant)
     }
-
-    // ghost: frozen old frame on top while it fades away
-    Item {
-        opacity: root.ghostOpacity
+    Image {
+        id: eyes
         anchors.fill: parent
-        z: 2
-        enabled: false
-
-        Image {
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
-            smooth: false
-            cache: false
-            source: root.bodySrc(root.oldPose, root.oldEmotion, root.oldVariant)
-        }
-        Image {
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
-            smooth: false
-            cache: false
-            visible: root.eyesOpenSrc(root.oldPose, root.oldEmotion, root.oldVariant) !== ""
-            source: root.eyesPhaseSrc(root.oldPose, root.oldEmotion, root.oldVariant,
-                                     root.oldEyesPhase)
-        }
-        Image {
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
-            smooth: false
-            cache: false
-            source: root.mouthSrc(root.oldPose, root.oldEmotion, root.oldMouthPhase)
-        }
+        fillMode: Image.PreserveAspectFit
+        smooth: false
+        cache: false
+        property string phase: "open"
+        visible: root.eyesOpenSrc(root.pose, root.emotion, root.variant) !== ""
+        source: root.eyesPhaseSrc(root.pose, root.emotion, root.variant, phase)
+    }
+    Image {
+        id: mouth
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectFit
+        smooth: false
+        cache: false
+        property string phase: "closed"
+        source: root.mouthSrc(root.pose, root.emotion, phase)
     }
 
     // ---- blink loop ----
@@ -211,15 +147,7 @@ Item {
     Connections {
         target: RoomState
         function onSpriteEpochChanged() {
-            root.oldPose = root.pose;
-            root.oldEmotion = root.emotion;
-            root.oldVariant = root.variant;
-            root.oldEyesPhase = eyes.phase;
-            root.oldMouthPhase = mouth.phase;
-            root.ghostOpacity = 1;      // old frame on top
-            ghostDrop.restart();        // ...fades out over 260ms
-            root.fadeOpacity = 0;       // new frame drops out...
-            fadeIn.restart();           // ...then crossfades back in
+            // instant swap (crossfade was disruptive; image is small enough)
             root.pose = RoomState.spritePose;
             root.emotion = RoomState.spriteEmotion;
             root.variant = RoomState.spriteVariant;
