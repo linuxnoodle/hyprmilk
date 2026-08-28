@@ -55,12 +55,18 @@ PanelWindow {
     property real smoothX: targetX
     property real smoothY: targetY
 
+    // momentum: underdamped spring = overshoot & settle when sweeping
     Behavior on smoothX {
-        NumberAnimation { duration: 260; easing.type: Easing.OutQuad }
+        SpringAnimation { spring: 6.0; damping: 0.35; mass: 1.0; epsilon: 0.01 }
     }
     Behavior on smoothY {
-        NumberAnimation { duration: 260; easing.type: Easing.OutQuad }
+        SpringAnimation { spring: 6.0; damping: 0.35; mass: 1.0; epsilon: 0.01 }
     }
+
+    // shared warp fields (depth-scaled lean + foreshorten)
+    readonly property real vNorm: overscanY > 0 ? smoothY / overscanY : 0   // [-0.5..0.5]
+    function layerSkew(d) { return vNorm * 0.10 * d }
+    function layerSquash(d) { return 1 - Math.abs(vNorm) * 0.18 * d }
 
     // per-depth offset (depth 1 = room plate reference)
     function layerX(depth) { return smoothX * depth; }
@@ -77,14 +83,19 @@ PanelWindow {
 
     // ---- layer 1 (far): red-dominant imagery seen through the windows ----
     Item {
+        id: wallCanvas
         z: -2
         anchors.centerIn: parent
         width: parent.width + bg.overscanX * 1.5
         height: parent.height + bg.overscanY * 1.5
 
-        transform: Translate {
-            x: bg.layerX(0.45)
-            y: bg.layerY(0.45)
+        readonly property real kh: height   // canvas height (matrix can't see it)
+        transform: Matrix4x4 {
+            matrix: Qt.matrix4x4(
+                1, bg.layerSkew(0.45), 0, bg.layerX(0.45) - bg.layerSkew(0.45) * wallCanvas.kh / 2,
+                0, bg.layerSquash(0.45), 0, wallCanvas.kh / 2 * (1 - bg.layerSquash(0.45)),
+                0, 0, 1, 0,
+                0, 0, 0, 1)
         }
 
         Image {
@@ -99,14 +110,19 @@ PanelWindow {
 
     // ---- layer 2 (mid): room plate, transparent window cutouts ----
     Item {
+        id: plateCanvas
         z: 0
         anchors.centerIn: parent
         width: parent.width + bg.overscanX * 1.5
         height: parent.height + bg.overscanY * 1.5
 
-        transform: Translate {
-            x: bg.layerX(1.0)
-            y: bg.layerY(1.0)
+        readonly property real kh: height   // canvas height (matrix can't see it)
+        transform: Matrix4x4 {
+            matrix: Qt.matrix4x4(
+                1, bg.layerSkew(1.0), 0, bg.layerX(1.0) - bg.layerSkew(1.0) * plateCanvas.kh / 2,
+                0, bg.layerSquash(1.0), 0, plateCanvas.kh / 2 * (1 - bg.layerSquash(1.0)),
+                0, 0, 1, 0,
+                0, 0, 0, 1)
         }
 
         Image {
@@ -138,10 +154,8 @@ PanelWindow {
 
         // vertical parallax = WARP, not translate: lean (shear) + slight
         // foreshorten, feet pinned to the bottom edge. driven by bg.smoothY.
-        readonly property real vNorm: bg.overscanY > 0
-            ? bg.smoothY / bg.overscanY : 0      // [-0.5..0.5]
-        readonly property real warpSkew: -vNorm * 0.10          // lean
-        readonly property real warpSquash: 1 - Math.abs(vNorm) * 0.18  // foreshorten
+        readonly property real warpSkew: bg.layerSkew(1.6)
+        readonly property real warpSquash: bg.layerSquash(1.6)
         readonly property real footH: height
 
         transform: Matrix4x4 {
