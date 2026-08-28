@@ -12,15 +12,40 @@ import "music" as M
 
 ShellRoot {
 
-    // workspace tracking -> RoomState
+    // the game's own dialogue font (aaa.ttf); everything falls back to it
+    FontLoader {
+        id: gameFont
+        source: "assets/fonts/game-aaa.ttf"
+        onStatusChanged: if (status === FontLoader.Ready)
+            Theme.gameFontFamily = gameFont.name
+    }
+
+    // widest monitor = the "main" screen (girl + dialogue live here)
+    function mainScreenInfo() {
+        const screens = Quickshell.screens;
+        let best = screens[0];
+        for (let i = 1; i < screens.length; ++i)
+            if (screens[i].width > best.width)
+                best = screens[i];
+        return best;
+    }
+
+    // workspace tracking -> RoomState. focusedmon only updates the room
+    // label/ambient; dialogue fires only on a real workspace switch
     Connections {
         target: Hyprland
 
         function onRawEvent(event) {
-            if (event.name === "workspace" || event.name === "focusedmon") {
-                const m = Hyprland.focusedMonitor;
-                if (m?.activeWorkspace)
-                    RoomState.currentWs = m.activeWorkspace.id;
+            const m = Hyprland.focusedMonitor;
+            if (!m?.activeWorkspace)
+                return;
+            const ws = m.activeWorkspace.id;
+            if (event.name === "workspace") {
+                RoomState.currentWs = ws;
+                RoomState.sayRoomIntro(RoomState.roomId);
+            } else if (event.name === "focusedmon") {
+                if (ws !== RoomState.currentWs)
+                    RoomState.currentWs = ws;
             }
         }
     }
@@ -50,11 +75,11 @@ ShellRoot {
         Bar.Bar {}
     }
 
-    // dialogue box on primary screen (input-transparent except the box itself)
+    // dialogue box on main monitor (input-transparent except the box itself)
     PanelWindow {
         id: dlgWin
 
-        screen: Quickshell.primaryScreen ?? Quickshell.screens[0]
+        screen: mainScreenInfo()
         exclusionMode: ExclusionMode.Ignore
         aboveWindows: false
         color: "transparent"

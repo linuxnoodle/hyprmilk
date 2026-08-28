@@ -12,8 +12,11 @@ QtObject {
     readonly property color fg2: "#c4c4c4"
     readonly property color purple: "#7d128d" // mom / shopkeeper text, game uses this
 
-    readonly property string fontFamily: "BigBlueTermPlus Nerd Font Mono"
-    readonly property int fontSize: 14
+    // game's own dialogue font (gui.text_font = aaa.ttf), loaded by shell.qml
+    property string gameFontFamily: ""
+    readonly property string fontFamily:
+        gameFontFamily !== "" ? gameFontFamily : "monospace"
+    property int fontSize: 14
 
     readonly property int barHeight: 28
     readonly property int barMargin: 8

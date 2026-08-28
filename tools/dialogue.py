@@ -149,6 +149,13 @@ def extract_hub(script_lines):
     return out
 
 
+def emit_js(name: str, obj):
+    (ROOT / "data" / f"{name}.js").write_text(
+        f"var {name} = " + json.dumps(obj, ensure_ascii=False) + ";\n",
+        encoding="utf-8",
+    )
+
+
 def main():
     trans = load_translations(WORK)
     print(f">> {len(trans)} EN translation pairs")
@@ -174,6 +181,7 @@ def main():
     out = ROOT / "data" / "dialogue.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(dialogue, ensure_ascii=False, indent=1), encoding="utf-8")
+    emit_js("dialogue", dialogue)
 
     # ---------------- rooms.json ----------------
     rooms = {}
@@ -216,7 +224,8 @@ def main():
     (ROOT / "data" / "rooms.json").write_text(
         json.dumps(rooms, ensure_ascii=False, indent=1), encoding="utf-8"
     )
-    print(">> wrote data/dialogue.json + data/rooms.json")
+    emit_js("rooms", rooms)
+    print(">> wrote data/dialogue.json + data/rooms.json + .js modules")
 
 
 if __name__ == "__main__":

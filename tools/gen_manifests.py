@@ -56,6 +56,14 @@ def radio():
     return out
 
 
+def emit_js(name: str, obj):
+    """Emit data/<name>.js for static QML import (no runtime file IO)."""
+    (ROOT / "data" / f"{name}.js").write_text(
+        f"var {name} = " + json.dumps(obj, ensure_ascii=False) + ";\n",
+        encoding="utf-8",
+    )
+
+
 def main():
     data = {
         "skybox": skybox(),
@@ -65,6 +73,7 @@ def main():
     (ROOT / "data/manifest.json").write_text(
         json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8"
     )
+    emit_js("manifest", data)
     n_emotions = sum(len(v) for v in data["sprites"].values())
     print(
         f">> manifest: {len(data['skybox']['all'])} skybox pairs, "

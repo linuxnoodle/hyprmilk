@@ -28,8 +28,8 @@ PanelWindow {
         left: true
         right: true
     }
-    exclusiveZone: Math.round(42 * uiScale)
-    implicitHeight: exclusiveZone
+    exclusiveZone: 0   // float over windows, don't push content down
+    implicitHeight: Math.round(Theme.barExclusive * root.uiScale)
     color: "transparent"
     mask: barRegion
 
