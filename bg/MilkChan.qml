@@ -8,6 +8,7 @@ import ".."
 //   mouth:  {emotion}_mouth_{closed,half,full}.png
 // Blink: open -> (2..6s random) -> half (.1) -> closed (.2) -> half (.1) -> open
 // Talk:  mouth half (.1) <-> full (.1) while `speaking`, else closed
+// Crossfade: a frozen ghost of the old pose fades out while the new fades in.
 Item {
     id: root
 
@@ -16,110 +17,157 @@ Item {
     property int variant: RoomState.spriteVariant
     property bool speaking: false
     property real scale: 0.5
-    property real fadeOpacity: 1.0   // fast crossfade on pose/emotion change
+
+    // ---- parametrized source helpers (also used by the ghost) ----
+    function wrap(p, e, v) {
+        return RoomState.manifest.sprites?.[p]?.[e] ?? null;
+    }
+    function bodySrc(p, e, v) {
+        const m = wrap(p, e, v);
+        const vv = (m?.bodies ?? []).includes(v) ? v : (m?.bodies?.[0] ?? 1);
+        return `../assets/sprites/${p}/${e}/${e}_${vv}.png`;
+    }
+    function eyesOpenSrc(p, e, v) {
+        const m = wrap(p, e, v);
+        const vv = (m?.bodies ?? []).includes(v) ? v : (m?.bodies?.[0] ?? 1);
+        return (m?.eyes[String(vv)] ?? []).includes("open")
+            ? `../assets/sprites/${p}/${e}/${e}_${vv}_eyes_open.png` : "";
+    }
+    function eyesHalfSrc(p, e, v) {
+        const m = wrap(p, e, v);
+        const vv = (m?.bodies ?? []).includes(v) ? v : (m?.bodies?.[0] ?? 1);
+        return (m?.eyes[String(vv)] ?? []).includes("half")
+            ? `../assets/sprites/${p}/${e}/${e}_${vv}_eyes_half.png` : "";
+    }
+    function eyesClosedSrc(p, e, v) {
+        const m = wrap(p, e, v);
+        const vv = (m?.bodies ?? []).includes(v) ? v : (m?.bodies?.[0] ?? 1);
+        return (m?.eyes[String(vv)] ?? []).length > 0
+            ? `../assets/sprites/${p}/${e}/${e}_eyes_closed.png` : "";
+    }
+    function eyesPhaseSrc(p, e, v, phase) {
+        if (phase === "open") return eyesOpenSrc(p, e, v);
+        if (phase === "half") return eyesHalfSrc(p, e, v);
+        if (phase === "closed") return eyesClosedSrc(p, e, v);
+        return "";
+    }
+    function mouthSrc(p, e, phase) {
+        const mouths = wrap(p, e, 0)?.mouths ?? [];
+        if (phase === "closed")
+            return mouths.includes("closed")
+                ? `../assets/sprites/${p}/${e}/${e}_mouth_closed.png`
+                : `../assets/sprites/${p}/neutral/neutral_mouth_closed.png`;
+        if (phase === "half")
+            return mouths.includes("half")
+                ? `../assets/sprites/${p}/${e}/${e}_mouth_half.png`
+                : `../assets/sprites/${p}/neutral/neutral_mouth_half.png`;
+        if (phase === "full")
+            return mouths.includes("full")
+                ? `../assets/sprites/${p}/${e}/${e}_mouth_full.png`
+                : `../assets/sprites/${p}/neutral/neutral_mouth_full.png`;
+        return "";
+    }
+
+    // ---- live frame (new pose during a crossfade) ----
+    property real fadeOpacity: 1.0
     Behavior on fadeOpacity {
         NumberAnimation { duration: 110; easing.type: Easing.InOutQuad }
     }
-    opacity: root.fadeOpacity
 
-    // two-phase: fade out, swap frame (mid-window), fade back in
     Timer {
-        id: fadeSwap
-        interval: 130
+        id: fadeIn
+        interval: 130   // after old has dropped out, bring the new in
         onTriggered: root.fadeOpacity = 1
     }
 
-    readonly property string base: `../assets/sprites/${pose}/${emotion}`
-    // sources are self-contained single expressions (one snapshot each)
-    readonly property string eyesOpenSrc: {
-        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
-        const v = (m?.bodies ?? []).includes(variant) ? variant : (m?.bodies?.[0] ?? 1);
-        return (m?.eyes[String(v)] ?? []).includes("open")
-            ? `../assets/sprites/${pose}/${emotion}/${emotion}_${v}_eyes_open.png` : "";
+    // ---- ghost of the previous pose, faded out during the crossfade ----
+    property string oldPose: ""
+    property string oldEmotion: ""
+    property int oldVariant: 1
+    property string oldEyesPhase: "open"
+    property string oldMouthPhase: "closed"
+    property real ghostOpacity: 0
+    Behavior on ghostOpacity {
+        NumberAnimation { duration: 260; easing.type: Easing.InOutQuad }
     }
-    readonly property string eyesHalfSrc: {
-        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
-        const v = (m?.bodies ?? []).includes(variant) ? variant : (m?.bodies?.[0] ?? 1);
-        return (m?.eyes[String(v)] ?? []).includes("half")
-            ? `../assets/sprites/${pose}/${emotion}/${emotion}_${v}_eyes_half.png`
-            : (m && (m?.eyes[String(v)] ?? []).includes("open")
-                ? `../assets/sprites/${pose}/${emotion}/${emotion}_eyes_closed.png` : "");
-    }
-    readonly property string eyesClosedSrc: eyesHalfSrc !== "" ? `../assets/sprites/${pose}/${emotion}/${emotion}_eyes_closed.png` : ""
-    readonly property bool hasEyes: eyesOpenSrc !== ""
-    // body: self-contained snapshot (no transient combos)
-    readonly property string bodySrc: {
-        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
-        const v = (m?.bodies ?? []).includes(variant) ? variant : (m?.bodies?.[0] ?? 1);
-        return `../assets/sprites/${pose}/${emotion}/${emotion}_${v}.png`;
-    }
-    // mouth: own flap frames, else the pose's neutral emotion flap frames (game does this)
-    readonly property string mouthClosedSrc: {
-        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
-        const mouths = m?.mouths ?? [];
-        return mouths.includes("closed")
-            ? `../assets/sprites/${pose}/${emotion}/${emotion}_mouth_closed.png`
-            : `../assets/sprites/${pose}/neutral/neutral_mouth_closed.png`;
-    }
-    readonly property string mouthHalfSrc: {
-        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
-        const mouths = m?.mouths ?? [];
-        // always flap: own frame when shipped, else the pose's neutral flap
-        // (neutral has half+full for every pose, so no emotion is ever silent)
-        if (mouths.includes("half"))
-            return `../assets/sprites/${pose}/${emotion}/${emotion}_mouth_half.png`;
-        return `../assets/sprites/${pose}/neutral/neutral_mouth_half.png`;
-    }
-    readonly property string mouthFullSrc: {
-        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
-        const mouths = m?.mouths ?? [];
-        if (mouths.includes("full"))
-            return `../assets/sprites/${pose}/${emotion}/${emotion}_mouth_full.png`;
-        return `../assets/sprites/${pose}/neutral/neutral_mouth_full.png`;
+    Timer {
+        id: ghostDrop
+        interval: 270
+        onTriggered: root.ghostOpacity = 0
     }
 
-    // game sprite is 1959x1027; keep native ratio, scale down
     implicitWidth: 1959 * scale
     implicitHeight: 1027 * scale
 
-    Image {
+    Item {
+        opacity: root.fadeOpacity
         anchors.fill: parent
-        fillMode: Image.PreserveAspectFit
-        smooth: false
-        cache: false
-        source: root.bodySrc
+
+        Image {
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            cache: false
+            source: root.bodySrc(root.pose, root.emotion, root.variant)
+        }
+        Image {
+            id: eyes
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            cache: false
+            property string phase: "open"
+            visible: root.eyesOpenSrc(root.pose, root.emotion, root.variant) !== ""
+            source: root.eyesPhaseSrc(root.pose, root.emotion, root.variant, phase)
+        }
+        Image {
+            id: mouth
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            cache: false
+            property string phase: "closed"
+            source: root.mouthSrc(root.pose, root.emotion, phase)
+        }
     }
 
-    Image {
-        id: eyes
+    // ghost: frozen old frame on top while it fades away
+    Item {
+        opacity: root.ghostOpacity
         anchors.fill: parent
-        fillMode: Image.PreserveAspectFit
-        smooth: false
-        cache: false
-        property string phase: "open"   // open | half | closed
-        visible: root.eyesOpenSrc !== ""
-        source: phase === "open" ? root.eyesOpenSrc
-            : phase === "half" ? root.eyesHalfSrc
-            : root.eyesClosedSrc
+        z: 2
+        enabled: false
+
+        Image {
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            cache: false
+            source: root.bodySrc(root.oldPose, root.oldEmotion, root.oldVariant)
+        }
+        Image {
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            cache: false
+            visible: root.eyesOpenSrc(root.oldPose, root.oldEmotion, root.oldVariant) !== ""
+            source: root.eyesPhaseSrc(root.oldPose, root.oldEmotion, root.oldVariant,
+                                     root.oldEyesPhase)
+        }
+        Image {
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectFit
+            smooth: false
+            cache: false
+            source: root.mouthSrc(root.oldPose, root.oldEmotion, root.oldMouthPhase)
+        }
     }
 
-    Image {
-        id: mouth
-        anchors.fill: parent
-        fillMode: Image.PreserveAspectFit
-        smooth: false
-        cache: false
-        property string phase: "closed" // closed | half | full
-        source: phase === "half" ? root.mouthHalfSrc
-            : phase === "full" ? root.mouthFullSrc
-            : root.mouthClosedSrc
-    }
-
-    // ---- blink loop (chained timers; no SequenceContainer in qs 0.3) ----
+    // ---- blink loop ----
     Timer {
         id: blinkHold
         interval: 2000 + Math.random() * 4000
-        running: root.eyesOpenSrc !== ""
+        running: root.eyesOpenSrc(root.pose, root.emotion, root.variant) !== ""
         onTriggered: {
             eyes.phase = "half";
             t1.start();
@@ -141,31 +189,29 @@ Item {
     Timer {
         id: talk
         interval: 100
-        repeat: root.speaking && root.mouthHalfSrc !== "" && root.mouthFullSrc !== ""
-        running: root.speaking && root.mouthHalfSrc !== "" && root.mouthFullSrc !== ""
+        repeat: root.speaking && root.mouthSrc(root.pose, root.emotion, "half") !== ""
+                     && root.mouthSrc(root.pose, root.emotion, "full") !== ""
+        running: repeat
         onTriggered: mouth.phase = mouth.phase === "half" ? "full" : "half"
         onRunningChanged: if (!running) mouth.phase = "closed"
     }
 
-    // reseeds from RoomState (workspace change etc.)
+    // reseeds from RoomState: freeze old pose as ghost, swap, crossfade
     Connections {
         target: RoomState
         function onSpriteEpochChanged() {
-            root.fadeOpacity = 0;   // fade out old frame...
-            fadeSwap.restart();       // ...swap mid-window, fade back in
+            root.oldPose = root.pose;
+            root.oldEmotion = root.emotion;
+            root.oldVariant = root.variant;
+            root.oldEyesPhase = eyes.phase;
+            root.oldMouthPhase = mouth.phase;
+            root.ghostOpacity = 1;      // old frame on top
+            ghostDrop.restart();        // ...fades out over 260ms
+            root.fadeOpacity = 0;       // new frame drops out...
+            fadeIn.restart();           // ...then crossfades back in
             root.pose = RoomState.spritePose;
             root.emotion = RoomState.spriteEmotion;
             root.variant = RoomState.spriteVariant;
         }
     }
-
-
-    // gentle idle bob like the game's subtle motion — DISABLED: continuous
-    // repaint flickers the layer under the cursor on some Qt/qs versions
-    // SequentialAnimation on y {
-    //     running: true
-    //     loops: Animation.Infinite
-    //     NumberAnimation { to: 6; duration: 3200; easing.type: Easing.InOutSine }
-    //     NumberAnimation { to: 0; duration: 3200; easing.type: Easing.InOutSine }
-    // }
 }
