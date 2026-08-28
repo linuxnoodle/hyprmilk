@@ -23,7 +23,6 @@ QtObject {
     readonly property var room: rooms[String(currentWs)] ?? null
     readonly property string roomId: room?.id ?? "hub"
 
-    property int plateIndex: 0
     property bool voiceMuted: false
     property bool speaking: false   // dialogue typewriter active -> sprite mouth
     property bool dialogueVisible: false   // milk dialogue window present
@@ -39,7 +38,6 @@ QtObject {
 
     signal didChangeRoom(string roomId)
     signal dialogueRequested(var line)
-    signal wallChanged(int index)
 
     // ----------------------------------------------------------------
     function reseedSprite(pose, emotion) {
@@ -81,7 +79,6 @@ QtObject {
         if (!walls?.length)
             return;
         wallIndex = (wallIndex + 1) % walls.length;
-        wallChanged(wallIndex);
     }
 
     function comboList() {
@@ -110,12 +107,6 @@ QtObject {
         applySprite(combos[stateCursor][0], combos[stateCursor][1]);
     }
 
-    function randomPlate() {
-        const plates = room?.plates ?? [];
-        if (!plates.length)
-            return;
-        plateIndex = Math.floor(Math.random() * plates.length);
-    }
 
     function say(line) {
         dialogueRequested(line);
@@ -134,16 +125,6 @@ QtObject {
         say(lines[idx]);
     }
 
-    function sayRoomIntro(roomId) {
-        // one distilled line so textboxes always appear on room entry
-        const lines = dialogue[roomId];
-        if (!lines?.length)
-            return;
-        const picks = lines.filter(l => l.speaker === "narr");
-        const line = (picks.length ? picks : lines)[
-            Math.floor(Math.random() * (picks.length ? picks.length : lines.length))];
-        say(line);
-    }
 
     function toggleVoice() {
         voiceMuted = !voiceMuted;
