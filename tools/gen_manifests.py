@@ -56,6 +56,16 @@ def radio():
     return out
 
 
+def walls():
+    # curated pool: scenic game imagery only (flat-red mirror_gg + room
+    # plate are excluded; they read as "just a red color")
+    EXCLUDE = {"mirror_gg", "room"}
+    w = A / "bg" / "walls"
+    if not w.is_dir():
+        return []
+    return sorted(p.stem for p in w.glob("*.png") if p.stem not in EXCLUDE)
+
+
 def emit_js(name: str, obj):
     """Emit data/<name>.js for static QML import (no runtime file IO)."""
     (ROOT / "data" / f"{name}.js").write_text(
@@ -74,8 +84,12 @@ def main():
         json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8"
     )
     emit_js("manifest", data)
+    w = {"walls": walls()}
+    (ROOT / "data/walls.json").write_text(json.dumps(w), encoding="utf-8")
+    emit_js("walls", w)
     n_emotions = sum(len(v) for v in data["sprites"].values())
     print(
+        f">> walls: {w['walls']}\n"
         f">> manifest: {len(data['skybox']['all'])} skybox pairs, "
         f"{len(data['sprites'])} poses, {n_emotions} pose-emotion combos, "
         f"radio: { {k: len(v) for k, v in data['radio'].items()} }"

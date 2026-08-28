@@ -1,2 +1,4 @@
 assets/
-data/dialogue.json
+# dev / generated
+screenshots/
+__pycache__/
