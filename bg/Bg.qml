@@ -210,14 +210,15 @@ PanelWindow {
     Connections {
         target: RoomState
         function onWallIndexChanged() {
-            // freeze the outgoing frame, fade the new one in
+            // crossfade: layer the outgoing frame above, fade it away over
+            // the always-decoded new one
             if (bg._prevWallIdx >= 0 && RoomState.walls?.length) {
-                // ids are document-scope aliases, not object properties
                 wallOld.source =
                     `../assets/bg/walls/${RoomState.walls[bg._prevWallIdx]}.png`;
-                bg.wallFade = 0;
-                Qt.callLater(() => wallFadeAnim.start());
-                // (completion is handled by wallNew.onStatusChanged)
+                wallOld.opacity = 1;
+                wallOld.z = 2;
+                wallFadeReset.restart();
+                wallFadeOut.start();
             }
             bg._prevWallIdx = RoomState.wallIndex;
         }
