@@ -56,7 +56,7 @@ ShellRoot {
             const ws = m.activeWorkspace.id;
             if (event.name === "workspace") {
                 RoomState.currentWs = ws;
-                RoomState.sayRoomIntro(RoomState.roomId);
+                // no auto-intro on every ws switch (text is periodic / on demand)
             } else if (event.name === "focusedmon") {
                 if (ws !== RoomState.currentWs)
                     RoomState.currentWs = ws;
@@ -134,6 +134,15 @@ ShellRoot {
     O.Osd {}
 
     M.PlayerPopup {}
+
+    // periodic dialogue — a line every few minutes, on its own
+    Timer {
+        id: periodicDialogue
+        interval: 240000   // 4 min
+        running: true
+        repeat: true
+        onTriggered: RoomState.sayRandom()
+    }
 
     // room ambient follows the active room
     Connections {
