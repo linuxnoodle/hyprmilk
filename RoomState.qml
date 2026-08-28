@@ -5,6 +5,7 @@ import Quickshell
 import "data/rooms.js" as RoomsData
 import "data/manifest.js" as ManifestData
 import "data/dialogue.js" as DialogueData
+import "data/walls.js" as WallsData
 
 QtObject {
     id: root
@@ -13,6 +14,8 @@ QtObject {
     property var rooms: RoomsData.rooms
     property var manifest: ManifestData.manifest
     property var dialogue: DialogueData.dialogue
+    property var walls: WallsData.walls.walls
+    property int wallIndex: -1   // chosen once at boot (real game imagery)
 
     // ---- live state ----
     property int currentWs: 1
@@ -62,6 +65,13 @@ QtObject {
         } while (range.length > 1 && next === skyboxIndex);
         skyboxIndex = next;
         skyboxChanged(next);
+    }
+
+    // launcher action: cycle the wallpaper image (CGs, sky frames, room art)
+    function cycleWallpaper() {
+        if (!walls?.length)
+            return;
+        wallIndex = (wallIndex + 1) % walls.length;
     }
 
     // launcher action: show the skybox layer and pick a new frame
@@ -141,7 +151,9 @@ QtObject {
     }
 
     Component.onCompleted: {
-        // seed one sprite + skybox from data immediately (no async)
+        // seed one sprite + skybox + wallpaper from data immediately
         rerollSkybox();
+        if (walls?.length)
+            wallIndex = Math.floor(Math.random() * walls.length);
     }
 }

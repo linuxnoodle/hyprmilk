@@ -106,31 +106,20 @@ PanelWindow {
         }
     }
 
-    // full-screen red wash (uniform, scales to every monitor)
-    Rectangle {
+    // wallpaper: real game imagery (CGs / sky frames / room art) from
+    // assets/bg/walls/, downscaled by tools. one static image per session,
+    // cycled via the launcher action.
+    Image {
+        id: wall
         anchors.fill: parent
-        color: "#b33636"
-        opacity: 0.30
-    }
-
-    // room plate: static flat red/black bedroom, drawn slightly oversized so
-    // parallax/drift never reveals edges. layer texture = repaint-stable.
-    Rectangle {
-        anchors.fill: parent
-        color: "transparent"
-        Image {
-            anchors.fill: parent
-            width: parent.width * 1.08
-            height: parent.height * 1.08
-            x: bg.shiftX(1.0) - (width - parent.width) / 2
-            y: bg.shiftY(1.0) - (height - parent.height) / 2
-            fillMode: Image.PreserveAspectCrop
-            smooth: false
-            layer.enabled: true
-            layer.smooth: false
-            layer.textureSize: Qt.size(width, height)
-            source: "../assets/bg/bg.png"
-        }
+        fillMode: Image.PreserveAspectCrop
+        smooth: false
+        layer.enabled: true
+        layer.smooth: false
+        layer.textureSize: Qt.size(width, height)
+        source: RoomState.wallIndex >= 0
+            ? `../assets/bg/walls/${RoomState.walls[RoomState.wallIndex]}.png`
+            : "../assets/bg/walls/room.png"
     }
 
     // Milk-Chan: only on the main (widest) monitor, closest layer

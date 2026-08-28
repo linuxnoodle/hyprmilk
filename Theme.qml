@@ -8,8 +8,8 @@ QtObject {
     readonly property color bg: "#0d0d14"
     readonly property color bg2: "#31363b"
     readonly property color bg3: "#3b4045"
-    readonly property color fg: "#ffffff"
-    readonly property color fg2: "#c4c4c4"
+    readonly property color fg: "#ac3232"     // ALL text is the milk red now
+    readonly property color fg2: "#8c2b2b"   // secondary text, dimmer red
     readonly property color purple: "#7d128d" // mom / shopkeeper text, game uses this
 
     // game's dialogue font (gui.text_font = 122.ttf, "Retro Gaming")

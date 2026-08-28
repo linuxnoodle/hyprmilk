@@ -1,0 +1,1 @@
+var walls = {"walls": ["balcony", "door", "eyelash", "fall_close", "sky1", "sky54", "sky75"]};

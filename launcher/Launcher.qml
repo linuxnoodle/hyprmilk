@@ -50,7 +50,7 @@ PanelWindow {
     function updateResults() {
         const q = searchField.text.toLowerCase().trim();
         const acts = [
-            { name: "Switch skybox", comment: "show intro art + reroll", action: () => RoomState.toggleSkybox() },
+            { name: "Switch wallpaper", comment: "next game CG / sky frame", action: () => RoomState.cycleWallpaper() },
             { name: "Talk to Milk-Chan", comment: "random dialogue line", action: () => RoomState.sayRandom() },
             { name: "Game radio", comment: Music.radioPlaying ? "stop radio" : "play station 1", action: () => Music.radioPlaying ? Music.stopRadio() : Music.startStation(1) },
         ];
