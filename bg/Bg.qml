@@ -65,7 +65,6 @@ PanelWindow {
 
     // shared warp fields (depth-scaled lean + foreshorten)
     readonly property real vNorm: overscanY > 0 ? smoothY / overscanY : 0   // [-0.5..0.5]
-    function layerSkew(d) { return vNorm * 0.10 * d }
     function layerSquash(d) { return 1 - Math.abs(vNorm) * 0.18 * d }
 
     // per-depth offset (depth 1 = room plate reference)
@@ -92,7 +91,7 @@ PanelWindow {
         readonly property real kh: height   // canvas height (matrix can't see it)
         transform: Matrix4x4 {
             matrix: Qt.matrix4x4(
-                1, bg.layerSkew(0.45), 0, bg.layerX(0.45) - bg.layerSkew(0.45) * wallCanvas.kh / 2,
+                1, 0, 0, bg.layerX(0.45),
                 0, bg.layerSquash(0.45), 0, wallCanvas.kh / 2 * (1 - bg.layerSquash(0.45)),
                 0, 0, 1, 0,
                 0, 0, 0, 1)
@@ -119,7 +118,7 @@ PanelWindow {
         readonly property real kh: height   // canvas height (matrix can't see it)
         transform: Matrix4x4 {
             matrix: Qt.matrix4x4(
-                1, bg.layerSkew(1.0), 0, bg.layerX(1.0) - bg.layerSkew(1.0) * plateCanvas.kh / 2,
+                1, 0, 0, bg.layerX(1.0),
                 0, bg.layerSquash(1.0), 0, plateCanvas.kh / 2 * (1 - bg.layerSquash(1.0)),
                 0, 0, 1, 0,
                 0, 0, 0, 1)
@@ -154,13 +153,12 @@ PanelWindow {
 
         // vertical parallax = WARP, not translate: lean (shear) + slight
         // foreshorten, feet pinned to the bottom edge. driven by bg.smoothY.
-        readonly property real warpSkew: bg.layerSkew(1.6)
         readonly property real warpSquash: bg.layerSquash(1.6)
         readonly property real footH: height
 
         transform: Matrix4x4 {
             matrix: Qt.matrix4x4(
-                1, bgWarp.warpSkew, 0, bg.layerX(1.6) - bgWarp.warpSkew * bgWarp.footH,
+                1, 0, 0, bg.layerX(1.6),
                 0, bgWarp.warpSquash, 0, bgWarp.footH * (1 - bgWarp.warpSquash),
                 0, 0, 1, 0,
                 0, 0, 0, 1)
