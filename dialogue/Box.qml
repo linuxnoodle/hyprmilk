@@ -5,6 +5,9 @@ import ".."
 Item {
     id: root
 
+    readonly property real uiScale: Math.max(1, Math.min(1.6,
+        (root.parent?.width ?? 1920) / 2560))
+
     property var line: null
     property bool speaking: false
     property string fullText: line?.text ?? ""
@@ -12,8 +15,9 @@ Item {
 
     visible: false
     opacity: 0
-    implicitWidth: Math.min(900, parent ? parent.width * 0.7 : 900)
-    implicitHeight: 150
+    implicitWidth: Math.min(Math.round(1100 * uiScale),
+        parent ? parent.width * 0.7 : 1100)
+    implicitHeight: Math.round(150 * uiScale)
 
     // frame: game gui/frame.png, stretched 9-slice-ish (borders preserved)
     BorderImage {
@@ -32,11 +36,11 @@ Item {
         id: body
         anchors {
             fill: parent
-            margins: 28
+            margins: Math.round(28 * root.uiScale)
         }
         wrapMode: Text.WordWrap
         font.family: Theme.fontFamily
-        font.pixelSize: 16
+        font.pixelSize: Math.round(16 * root.uiScale)
         color: line?.speaker === "narr" ? Theme.fg2 : Theme.fg
         text: root.fullText.slice(0, root.shownChars)
         smooth: false

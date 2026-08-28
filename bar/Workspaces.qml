@@ -11,6 +11,7 @@ MouseArea {
 
     required property var bar
     readonly property HyprlandMonitor monitor: Hyprland.monitorFor(bar.screen)
+    readonly property real uiScale: bar?.uiScale ?? 1
     property int wsBaseIndex: 1
     property int wsCount: 7
     property int currentIndex: 1
@@ -31,7 +32,7 @@ MouseArea {
     RowLayout {
         id: row
         anchors.fill: parent
-        spacing: 8
+        spacing: Math.round(8 * root.uiScale)
 
         Repeater {
             model: root.wsCount
@@ -46,8 +47,8 @@ MouseArea {
                     && root.monitor.activeWorkspace.id == wsItem.wsIndex
                 readonly property bool current: root.currentIndex === wsItem.wsIndex
 
-                implicitWidth: 24
-                implicitHeight: 24
+                implicitWidth: Math.round(24 * root.uiScale)
+                implicitHeight: Math.round(24 * root.uiScale)
                 acceptedButtons: Qt.LeftButton
                 cursorShape: Qt.PointingHandCursor
                 onPressed: Hyprland.dispatch(`workspace ${wsIndex}`)
@@ -68,7 +69,7 @@ MouseArea {
                     anchors.centerIn: parent
                     text: wsItem.index + 1
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: Math.round(11 * root.uiScale)
                     color: wsItem.active || wsItem.current ? Theme.fg : Theme.fg2
                     smooth: false
                 }

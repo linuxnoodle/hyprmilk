@@ -19,21 +19,36 @@ Item {
 
     readonly property string base: `../assets/sprites/${pose}/${emotion}`
     readonly property var manifest: RoomState.manifest.sprites?.[pose]?.[emotion] ?? null
-    readonly property var eyeSet: manifest ? (manifest.eyes[String(variant)] ?? []) : []
-    readonly property bool hasEyes: eyeSet.includes("open")
-    // transient combo (pose/emotion updated before variant settles) -> blank
-    readonly property bool comboValid: (manifest?.bodies ?? []).includes(variant)
-    readonly property string bodySrc: comboValid ? `${base}/${emotion}_${variant}.png` : ""
-    readonly property string eyesOpenSrc: hasEyes ? `${base}/${emotion}_${variant}_eyes_open.png` : ""
-    readonly property string eyesHalfSrc: hasEyes ? `${base}/${emotion}_${variant}_eyes_half.png` : ""
-    readonly property string eyesClosedSrc: hasEyes ? `${base}/${emotion}_eyes_closed.png` : ""
-    // mouth: own flap frames, else neutral flap frames from same dir (game does this)
+    // clamp variant to what this pose/emotion actually ships (kills transient
+    // combos while pose/emotion/variant update in sequence)
+    readonly property int effVariant: (manifest?.bodies ?? []).includes(variant)
+        ? variant : (manifest?.bodies?.[0] ?? 1)
+    // eye sources: self-contained single expressions so pose/emotion/variant
+    // are read as one snapshot (no mixed-staleness intermediate paths)
+    readonly property string eyesOpenSrc: {
+        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
+        const v = (m?.bodies ?? []).includes(variant) ? variant : (m?.bodies?.[0] ?? 1);
+        return (m?.eyes[String(v)] ?? []).includes("open")
+            ? `../assets/sprites/${pose}/${emotion}/${emotion}_${v}_eyes_open.png` : "";
+    }
+    readonly property string eyesHalfSrc: {
+        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
+        const v = (m?.bodies ?? []).includes(variant) ? variant : (m?.bodies?.[0] ?? 1);
+        return (m?.eyes[String(v)] ?? []).includes("half")
+            ? `../assets/sprites/${pose}/${emotion}/${emotion}_${v}_eyes_half.png`
+            : (m ? `../assets/sprites/${pose}/${emotion}/${emotion}_eyes_closed.png` : "");
+    }
+    readonly property string eyesClosedSrc: eyesHalfSrc !== "" ? `../assets/sprites/${pose}/${emotion}/${emotion}_eyes_closed.png` : ""
+    readonly property bool hasEyes: eyesOpenSrc !== ""
+    readonly property string bodySrc: `${base}/${emotion}_${effVariant}.png`
+    // mouth: own flap frames, else the pose's neutral emotion flap frames (game does this)
+    readonly property string neutralMouth: `../assets/sprites/${pose}/neutral`
     readonly property var mouthSet: manifest?.mouths ?? []
-    readonly property string mouthClosedSrc: mouthSet.includes("closed") ? `${base}/${emotion}_mouth_closed.png` : `${base}/neutral_mouth_closed.png`
+    readonly property string mouthClosedSrc: mouthSet.includes("closed") ? `${base}/${emotion}_mouth_closed.png` : `${neutralMouth}/neutral_mouth_closed.png`
     readonly property string mouthHalfSrc: mouthSet.includes("half") ? `${base}/${emotion}_mouth_half.png`
-        : mouthSet.includes("full") ? `${base}/neutral_mouth_half.png` : ""
+        : mouthSet.includes("full") ? `${neutralMouth}/neutral_mouth_half.png` : ""
     readonly property string mouthFullSrc: mouthSet.includes("full") ? `${base}/${emotion}_mouth_full.png`
-        : mouthSet.includes("half") ? `${base}/neutral_mouth_full.png` : ""
+        : mouthSet.includes("half") ? `${neutralMouth}/neutral_mouth_full.png` : ""
 
     // game sprite is 1959x1027; keep native ratio, scale down
     implicitWidth: 1959 * scale
@@ -54,7 +69,7 @@ Item {
         smooth: false
         cache: false
         property string phase: "open"   // open | half | closed
-        visible: root.hasEyes
+        visible: root.eyesOpenSrc !== ""
         source: phase === "open" ? root.eyesOpenSrc
             : phase === "half" ? root.eyesHalfSrc
             : root.eyesClosedSrc
@@ -76,7 +91,7 @@ Item {
     Timer {
         id: blinkHold
         interval: 2000 + Math.random() * 4000
-        running: root.hasEyes
+        running: root.eyesOpenSrc !== ""
         onTriggered: {
             eyes.phase = "half";
             t1.start();

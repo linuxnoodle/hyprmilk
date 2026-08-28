@@ -13,6 +13,11 @@ PanelWindow {
 
     required property var modelData
 
+    // UI scale grows with screen width so the bar isn't tiny on ultrawide
+    readonly property real uiScale: Math.max(1, Math.min(1.6, width / 2560))
+    readonly property int segPad: Math.round(12 * uiScale)
+    readonly property int segGap: Math.round(16 * uiScale)
+
     WlrLayershell.namespace: "shell:bar"
     screen: modelData
 
@@ -21,8 +26,8 @@ PanelWindow {
         left: true
         right: true
     }
-    exclusiveZone: Theme.barExclusive
-    implicitHeight: Theme.barExclusive
+    exclusiveZone: Math.round(42 * uiScale)
+    implicitHeight: exclusiveZone
     color: "transparent"
     mask: barRegion
 
@@ -44,7 +49,7 @@ PanelWindow {
             rightMargin: Theme.barMargin
         }
 
-        implicitHeight: Theme.barHeight
+        implicitHeight: Math.round(Theme.barHeight * root.uiScale)
         color: "transparent"
 
         // left: workspaces
@@ -54,13 +59,13 @@ PanelWindow {
                 bottom: parent.bottom
                 left: parent.left
             }
-            implicitWidth: leftRow.implicitWidth + 24
+            implicitWidth: leftRow.implicitWidth + 2 * root.segPad
             RowLayout {
                 id: leftRow
                 anchors {
                     fill: parent
-                    leftMargin: 12
-                    rightMargin: 12
+                    leftMargin: root.segPad
+                    rightMargin: root.segPad
                 }
                 Workspaces {
                     bar: root
@@ -76,16 +81,16 @@ PanelWindow {
                 bottom: parent.bottom
                 right: parent.right
             }
-            implicitWidth: timeWidget.implicitWidth + 24
+            implicitWidth: timeWidget.implicitWidth + 2 * root.segPad
             RowLayout {
                 anchors {
                     fill: parent
-                    leftMargin: 12
-                    rightMargin: 12
+                    leftMargin: root.segPad
+                    rightMargin: root.segPad
                 }
                 Time {
                     id: timeWidget
-                    size: 14
+                    size: Math.round(14 * root.uiScale)
                     showDate: false
                 }
             }
@@ -107,22 +112,22 @@ PanelWindow {
                 top: parent.top
                 bottom: parent.bottom
                 right: rightSeg.left
-                rightMargin: 16
+                rightMargin: root.segGap
             }
-            implicitWidth: trayRow.implicitWidth + 24
+            implicitWidth: trayRow.implicitWidth + 2 * root.segPad
             RowLayout {
                 id: trayRow
                 anchors {
                     fill: parent
-                    leftMargin: 12
-                    rightMargin: 12
+                    leftMargin: root.segPad
+                    rightMargin: root.segPad
                 }
-                spacing: 12
+                spacing: Math.round(12 * root.uiScale)
 
                 Text {
                     text: RoomState.roomId.toUpperCase()
                     font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    font.pixelSize: Math.round(12 * root.uiScale)
                     color: Theme.fg2
                     smooth: false
                 }
@@ -130,7 +135,7 @@ PanelWindow {
                 Text {
                     text: RoomState.voiceMuted ? "🔇" : "🔊"
                     font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    font.pixelSize: Math.round(12 * root.uiScale)
                     color: RoomState.voiceMuted ? Theme.fg2 : Theme.fg
 
                     MouseArea {
@@ -143,7 +148,7 @@ PanelWindow {
                 Text {
                     text: "⏻"
                     font.family: Theme.fontFamily
-                    font.pixelSize: 14
+                    font.pixelSize: Math.round(14 * root.uiScale)
                     color: Theme.fg2
 
                     MouseArea {

@@ -55,12 +55,13 @@ PanelWindow {
         // like the game. Other rooms are scene plates without the sprite.
         MilkChan {
             visible: RoomState.roomId === "hub"
-            scale: Math.min(0.55, parent.width / 3840)
+            // girl takes ~70% of screen height (game sprite is 1959x1027)
+            scale: Math.min(1.0, parent.height / 1027 * 0.7)
             speaking: RoomState.speaking
             anchors {
                 bottom: parent.bottom
                 right: parent.right
-                rightMargin: parent.width * 0.12
+                rightMargin: parent.width * 0.08
             }
         }
     }
