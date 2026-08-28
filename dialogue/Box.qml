@@ -63,11 +63,11 @@ Item {
 
     function finish() {
         speaking = false;
-        Sfx.speakLoopStop();   // slow_done: typing finished, loop fades
+        RoomState.speaking = false;   // mouth stops with the audio (slow_done)
+        Sfx.speakLoopStop();          // typing finished, loop fades
         shownChars = fullText.length;
         typeTimer.stop();
-        hideTimer.restart();
-        // keep RoomState.speaking true: text is still on screen (mouth flaps)
+        hideTimer.restart();          // textbox lingers a few more seconds
     }
 
     Timer {
