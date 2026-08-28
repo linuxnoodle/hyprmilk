@@ -64,12 +64,19 @@ PanelWindow {
     }
 
     // shared warp fields (depth-scaled lean + foreshorten)
-    readonly property real vNorm: overscanY > 0 ? smoothY / overscanY : 0   // [-0.5..0.5]
-    function layerSquash(d) { return 1 - Math.abs(vNorm) * 0.055 * d }
+    // breathing phase for Milk-Chan (idle inhale/exhale)
+    property real breathPhase: 0
 
     // per-depth offset (depth 1 = room plate reference)
     function layerX(depth) { return smoothX * depth; }
     function layerY(depth) { return smoothY * depth; }
+
+    Timer {
+        interval: 64
+        running: true
+        repeat: true
+        onTriggered: bg.breathPhase += 0.045   // ~9s full breath cycle
+    }
 
     // click = next girl state
     MouseArea {
@@ -88,13 +95,9 @@ PanelWindow {
         width: parent.width + bg.overscanX * 1.5
         height: parent.height + bg.overscanY * 1.5
 
-        readonly property real kh: height   // canvas height (matrix can't see it)
-        transform: Matrix4x4 {
-            matrix: Qt.matrix4x4(
-                1, 0, 0, bg.layerX(0.45),
-                0, bg.layerSquash(0.45), 0, wallCanvas.kh / 2 * (1 - bg.layerSquash(0.45)),
-                0, 0, 1, 0,
-                0, 0, 0, 1)
+        transform: Translate {
+            x: bg.layerX(0.45)
+            y: bg.layerY(0.45)
         }
 
         Image {
@@ -115,13 +118,9 @@ PanelWindow {
         width: parent.width + bg.overscanX * 1.5
         height: parent.height + bg.overscanY * 1.5
 
-        readonly property real kh: height   // canvas height (matrix can't see it)
-        transform: Matrix4x4 {
-            matrix: Qt.matrix4x4(
-                1, 0, 0, bg.layerX(1.0),
-                0, bg.layerSquash(1.0), 0, plateCanvas.kh / 2 * (1 - bg.layerSquash(1.0)),
-                0, 0, 1, 0,
-                0, 0, 0, 1)
+        transform: Translate {
+            x: bg.layerX(1.0)
+            y: bg.layerY(1.0)
         }
 
         Image {
@@ -153,13 +152,14 @@ PanelWindow {
 
         // vertical parallax = WARP, not translate: lean (shear) + slight
         // foreshorten, feet pinned to the bottom edge. driven by bg.smoothY.
-        readonly property real warpSquash: bg.layerSquash(1.6)
+        // idle breathing: gentle 2% vertical squash, feet pinned
+        readonly property real breathSquash: 1 + Math.sin(bg.breathPhase) * 0.02
         readonly property real footH: height
 
         transform: Matrix4x4 {
             matrix: Qt.matrix4x4(
                 1, 0, 0, bg.layerX(1.6),
-                0, bgWarp.warpSquash, 0, bgWarp.footH * (1 - bgWarp.warpSquash),
+                0, bgWarp.breathSquash, 0, bgWarp.footH * (1 - bgWarp.breathSquash),
                 0, 0, 1, 0,
                 0, 0, 0, 1)
         }
