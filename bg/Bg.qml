@@ -82,7 +82,7 @@ PanelWindow {
     // wallpaper crossfade progress
     property real wallFade: 1
     Behavior on wallFade {
-        NumberAnimation { duration: 240; easing.type: Easing.InOutQuad }
+        NumberAnimation { duration: 600; easing.type: Easing.InOutQuad }
     }
 
     MouseArea {
@@ -133,6 +133,13 @@ PanelWindow {
         anchors.centerIn: parent
         width: parent.width + bg.overscanX * 1.5
         height: parent.height + bg.overscanY * 1.5
+
+        // dips during transitions so the fading layer shows screen-wide
+        property real plateFade: 1
+        Behavior on plateFade {
+            NumberAnimation { duration: 600; easing.type: Easing.InOutQuad }
+        }
+        opacity: plateFade
 
         transform: Translate {
             x: bg.layerX(1.0)
@@ -199,10 +206,18 @@ PanelWindow {
                 wallOld.source =
                     `../assets/bg/walls/${RoomState.walls[bg._prevWallIdx]}.png`;
                 bg.wallFade = 0;
-                Qt.callLater(() => bg.wallFade = 1);
+                plateCanvas.plateFade = 0.45;   // reveal the blend everywhere
+                Qt.callLater(() => {
+                    bg.wallFade = 1;
+                    plateCanvas.plateFade = 1;
+                });
             }
             bg._prevWallIdx = RoomState.wallIndex;
         }
+    }
+
+    Component.onCompleted: {
+        bg._prevWallIdx = RoomState.wallIndex;
     }
 
     function mainScreen() {
