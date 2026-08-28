@@ -98,6 +98,7 @@ MouseArea {
             model: root.wsIds
 
             delegate: MouseArea {
+                id: chip
                 required property int index
                 readonly property int wsIndex: root.wsIds[index]
                 readonly property bool active:
@@ -117,9 +118,9 @@ MouseArea {
                     radius: 0   // pixel rectangles, not circles
                     // active: milk red; occupied: darker grey; empty: hollow
                     color: active ? Theme.accent2
-                        : delegate.hasWindows ? "#262a33"
+                        : chip.hasWindows ? "#262a33"
                         : "transparent"
-                    border.width: delegate.hasWindows ? 0 : 1
+                    border.width: chip.hasWindows ? 0 : 1
                     border.color: "#3b4045"
                     Behavior on color {
                         ColorAnimation { duration: 300 }
@@ -132,7 +133,7 @@ MouseArea {
                     font.family: Theme.fontFamily
                     font.pixelSize: Math.round(11 * (bar?.uiScale ?? 1))
                     color: active ? Theme.fg
-                        : delegate.hasWindows ? "#8c2b2b"
+                        : chip.hasWindows ? "#8c2b2b"
                         : "#5c2222"   // empty: dimmer
                     smooth: false
                 }
