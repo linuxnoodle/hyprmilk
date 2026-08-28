@@ -88,7 +88,7 @@ ShellRoot {
 
         screen: mainScreenInfo()
         exclusionMode: ExclusionMode.Ignore
-        aboveWindows: true     // VN textbox floats over apps
+        aboveWindows: false    // renders below apps, visible over the wallpaper
         color: "transparent"
         visible: RoomState.dialogueVisible   // decoupled from child visibility   // unmap when idle — parked transparent windows flicker
 
