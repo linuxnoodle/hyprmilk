@@ -52,20 +52,18 @@ Item {
     readonly property string mouthHalfSrc: {
         const m = RoomState.manifest.sprites?.[pose]?.[emotion];
         const mouths = m?.mouths ?? [];
+        // always flap: own frame when shipped, else the pose's neutral flap
+        // (neutral has half+full for every pose, so no emotion is ever silent)
         if (mouths.includes("half"))
             return `../assets/sprites/${pose}/${emotion}/${emotion}_mouth_half.png`;
-        if (mouths.includes("full"))
-            return `../assets/sprites/${pose}/neutral/neutral_mouth_half.png`;
-        return "";
+        return `../assets/sprites/${pose}/neutral/neutral_mouth_half.png`;
     }
     readonly property string mouthFullSrc: {
         const m = RoomState.manifest.sprites?.[pose]?.[emotion];
         const mouths = m?.mouths ?? [];
         if (mouths.includes("full"))
             return `../assets/sprites/${pose}/${emotion}/${emotion}_mouth_full.png`;
-        if (mouths.includes("half"))
-            return `../assets/sprites/${pose}/neutral/neutral_mouth_full.png`;
-        return "";
+        return `../assets/sprites/${pose}/neutral/neutral_mouth_full.png`;
     }
 
     // game sprite is 1959x1027; keep native ratio, scale down
@@ -146,6 +144,7 @@ Item {
             root.variant = RoomState.spriteVariant;
         }
     }
+
 
     // gentle idle bob like the game's subtle motion — DISABLED: continuous
     // repaint flickers the layer under the cursor on some Qt/qs versions

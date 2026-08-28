@@ -38,6 +38,10 @@ Singleton {
             RoomState.toggleGirl();
         }
 
+        function nextState(): void {
+            RoomState.nextState();
+        }
+
         function sayLine(): void {
             RoomState.sayRandom();
         }

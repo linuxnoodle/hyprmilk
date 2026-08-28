@@ -23,7 +23,7 @@ QtObject {
     property string _talkTok: ""
 
     function speakLoop() {
-        if (!enabled || voiceMuted || !focusOk())
+        if (!enabled || voiceMuted)
             return;
         speakLoopStop();
         // unique token per spawn: stale kills can't touch the fresh instance
