@@ -8,8 +8,8 @@ import QtQuick
 QtObject {
     id: root
 
-    // master audio switch — game sfx/ambient/voice via mpv. on.
-    property bool enabled: true
+    // master audio switch — off for now (fade/IPC layers kept for later)
+    property bool enabled: false
 
     property bool voiceMuted: false   // mirrors RoomState.voiceMuted
 
