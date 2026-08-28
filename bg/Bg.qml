@@ -100,10 +100,20 @@ PanelWindow {
             y: bg.layerY(0.45)
         }
 
+        // crossfade: old frame lingers as backdrop while new fades in fast
         Image {
+            id: wallOld
             anchors.fill: parent
             fillMode: Image.PreserveAspectCrop
             smooth: false
+            visible: source !== ""
+        }
+        Image {
+            id: wallNew
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectCrop
+            smooth: false
+            opacity: wallFade
             source: RoomState.wallIndex >= 0
                 ? `../assets/bg/walls/${RoomState.walls[RoomState.wallIndex]}.png`
                 : "../assets/bg/walls/room.png"
@@ -169,6 +179,22 @@ PanelWindow {
             acceptedButtons: Qt.LeftButton
             cursorShape: Qt.PointingHandCursor
             onClicked: RoomState.nextState()
+        }
+    }
+
+    property int _prevWallIdx: -1
+
+    Connections {
+        target: RoomState
+        function onWallIndexChanged() {
+            // freeze the outgoing frame, fade the new one in
+            if (bg._prevWallIdx >= 0 && RoomState.walls?.length) {
+                wallCanvas.wallOld.source =
+                    `../assets/bg/walls/${RoomState.walls[bg._prevWallIdx]}.png`;
+                wallCanvas.wallFade = 0;
+                Qt.callLater(() => wallCanvas.wallFade = 1);
+            }
+            bg._prevWallIdx = RoomState.wallIndex;
         }
     }
 
