@@ -16,11 +16,18 @@ Item {
     property int variant: RoomState.spriteVariant
     property bool speaking: false
     property real scale: 0.5
-    property real fadeOpacity: 1.0   // quick crossfade on pose/emotion change
+    property real fadeOpacity: 1.0   // fast crossfade on pose/emotion change
     Behavior on fadeOpacity {
-        NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
+        NumberAnimation { duration: 110; easing.type: Easing.InOutQuad }
     }
     opacity: root.fadeOpacity
+
+    // two-phase: fade out, swap frame (mid-window), fade back in
+    Timer {
+        id: fadeSwap
+        interval: 130
+        onTriggered: root.fadeOpacity = 1
+    }
 
     readonly property string base: `../assets/sprites/${pose}/${emotion}`
     // sources are self-contained single expressions (one snapshot each)
@@ -144,8 +151,8 @@ Item {
     Connections {
         target: RoomState
         function onSpriteEpochChanged() {
-            root.fadeOpacity = 0;                    // dip...
-            Qt.callLater(() => root.fadeOpacity = 1); // ...and fade back in
+            root.fadeOpacity = 0;   // fade out old frame...
+            fadeSwap.restart();       // ...swap mid-window, fade back in
             root.pose = RoomState.spritePose;
             root.emotion = RoomState.spriteEmotion;
             root.variant = RoomState.spriteVariant;
