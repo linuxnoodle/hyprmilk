@@ -12,10 +12,10 @@ import "music" as M
 
 ShellRoot {
 
-    // the game's own dialogue font (aaa.ttf); everything falls back to it
+    // the game's own dialogue font (gui.text_font = 122.ttf, "Retro Gaming")
     FontLoader {
         id: gameFont
-        source: "assets/fonts/game-aaa.ttf"
+        source: "assets/fonts/game-122.ttf"
         onStatusChanged: if (status === FontLoader.Ready)
             Theme.gameFontFamily = gameFont.name
     }
