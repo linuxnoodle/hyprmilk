@@ -48,9 +48,18 @@ PanelWindow {
             (Cursor.gy - (modelData.y ?? 0)) / (modelData.height || 1)));
     }
 
-    // content moves OPPOSITE the cursor; nearer layers (higher depth) more
-    readonly property real targetX: par ? (cursorNormX - 0.5) * -overscanX : 0
-    readonly property real targetY: par ? (cursorNormY - 0.5) * -overscanY : 0
+    // content moves OPPOSITE the cursor; nearer layers (higher depth) more.
+    // background mode: when a window is focused the target freezes at its
+    // last value (parallax + idle animation hold still until focus returns)
+    property real _frozenX: 0
+    property real _frozenY: 0
+
+    readonly property real targetX: par
+        ? (RoomState.wallpaperFocused ? (cursorNormX - 0.5) * -overscanX : _frozenX)
+        : 0
+    readonly property real targetY: par
+        ? (RoomState.wallpaperFocused ? (cursorNormY - 0.5) * -overscanY : _frozenY)
+        : 0
 
     property real smoothX: targetX
     property real smoothY: targetY
@@ -67,6 +76,17 @@ PanelWindow {
     // breathing phase for Milk-Chan (idle inhale/exhale)
     property real breathPhase: 0
 
+    Connections {
+        target: RoomState
+        function onWallpaperFocusedChanged() {
+            if (!RoomState.wallpaperFocused) {
+                // snapshot the resting offset so parallax freezes in place
+                bg._frozenX = bg.smoothX;
+                bg._frozenY = bg.smoothY;
+            }
+        }
+    }
+
     // per-depth offset (depth 1 = room plate reference)
     function layerX(depth) { return smoothX * depth; }
     function layerY(depth) { return smoothY * depth; }
@@ -75,7 +95,8 @@ PanelWindow {
         interval: 64
         running: true
         repeat: true
-        onTriggered: bg.breathPhase += 0.045   // ~9s full breath cycle
+        // breathing pauses while a window is focused (background mode)
+        onTriggered: if (RoomState.wallpaperFocused) bg.breathPhase += 0.045
     }
 
     // click = next girl state

@@ -115,6 +115,7 @@ Item {
         id: blinkHold
         interval: 2000 + Math.random() * 4000
         running: root.eyesOpenSrc(root.pose, root.emotion, root.variant) !== ""
+                && RoomState.wallpaperFocused   // frozen in background mode
         onTriggered: {
             eyes.phase = "half";
             t1.start();
@@ -136,8 +137,9 @@ Item {
     Timer {
         id: talk
         interval: 100
-        repeat: root.speaking && root.mouthSrc(root.pose, root.emotion, "half") !== ""
-                     && root.mouthSrc(root.pose, root.emotion, "full") !== ""
+        repeat: root.speaking && RoomState.wallpaperFocused
+                && root.mouthSrc(root.pose, root.emotion, "half") !== ""
+                && root.mouthSrc(root.pose, root.emotion, "full") !== ""
         running: repeat
         onTriggered: mouth.phase = mouth.phase === "half" ? "full" : "half"
         onRunningChanged: if (!running) mouth.phase = "closed"

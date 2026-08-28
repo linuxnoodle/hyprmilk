@@ -144,7 +144,7 @@ ShellRoot {
         interval: 240000   // 4 min
         running: true
         repeat: true
-        onTriggered: RoomState.sayRandom()
+        onTriggered: if (RoomState.wallpaperFocused) RoomState.sayRandom()
     }
 
     // idle mood swings: random pose/emotion every 45-150s (never while
@@ -155,7 +155,8 @@ ShellRoot {
         running: true
         repeat: true
         onTriggered: {
-            if (!RoomState.speaking && RoomState.girlVisible)
+            if (RoomState.wallpaperFocused
+                    && !RoomState.speaking && RoomState.girlVisible)
                 RoomState.reseedSprite();
             idleMood.interval = 45000 + Math.random() * 105000;
         }
