@@ -4,56 +4,50 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// global pointer position (px) — hyprctl cursorpos polled into a temp file.
-// only runs while parallax is enabled (Theme.parallaxEnabled).
+// Global pointer position via the Hyprland IPC socket (Synoptik pattern):
+// ONE persistent python client polls `cursorpos` at ~10Hz and streams to
+// SplitParser — no process churn, no temp files.
 Singleton {
     id: root
 
-    property real gx: 0
-    property real gy: 0
-    property bool ready: false
+    property real gx: -1
+    property real gy: -1
+    readonly property bool ready: gx >= 0
 
     readonly property bool active: Theme.parallaxEnabled
 
-    FileView {
-        id: fv
-        path: Cursor.active ? "/tmp/hyprmilk-cursor" : ""
-        blockLoading: true
-    }
-
-    Timer {
-        interval: 33
+    Process {
         running: Cursor.active
-        repeat: true
-        onTriggered: {
-            const t = fv.text() ?? "";
-            const m = /^(-?\d+)[, ]+(-?\d+)/.exec(t.trim());
-            if (m) {
-                root.gx = Number(m[1]);
-                root.gy = Number(m[2]);
-                root.ready = true;
+        command: ["python3", "-u", "-c",
+            "import socket, os, time\n" +
+            "sig = os.environ.get('HYPRLAND_INSTANCE_SIGNATURE', '')\n" +
+            "path = f'/run/user/{os.getuid()}/hypr/{sig}/.socket.sock'\n" +
+            "while True:\n" +
+            "    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n" +
+            "    try:\n" +
+            "        s.connect(path)\n" +
+            "        s.sendall(b'cursorpos')\n" +
+            "        data = b''\n" +
+            "        while True:\n" +
+            "            c = s.recv(256)\n" +
+            "            if not c: break\n" +
+            "            data += c\n" +
+            "        print(data.decode('utf-8', errors='ignore').strip(), flush=True)\n" +
+            "    except Exception: pass\n" +
+            "    finally: s.close()\n" +
+            "    time.sleep(0.1)\n"]
+        stdout: SplitParser {
+            onRead: data => {
+                const parts = data.trim().split(",");
+                if (parts.length >= 2) {
+                    const cx = parseFloat(parts[0]);
+                    const cy = parseFloat(parts[1]);
+                    if (!isNaN(cx) && !isNaN(cy)) {
+                        root.gx = cx;
+                        root.gy = cy;
+                    }
+                }
             }
         }
     }
-
-    property var _proc: null
-
-    function ensure() {
-        if (!root.active)
-            return;
-        if (_proc && _proc.running)
-            return;
-        _proc = procComp.createObject(root);
-        // self-terminates when the qs parent dies (no orphan loops)
-        _proc.command = ["sh", "-c",
-            "while kill -0 $PPID 2>/dev/null; do " +
-            "hyprctl cursorpos > /tmp/hyprmilk-cursor 2>/dev/null; sleep 0.033; done"];
-        _proc.running = true;
-    }
-
-    property Component procComp: Component {
-        Process {}
-    }
-
-    Component.onCompleted: ensure()
 }

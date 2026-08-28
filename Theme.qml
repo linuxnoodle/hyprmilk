@@ -37,5 +37,6 @@ QtObject {
     readonly property int animMed: 250
     readonly property int animSlow: 400
 
-    readonly property bool parallaxEnabled: false   // disabled: not smooth enough yet
+    readonly property bool parallaxEnabled: true    // Synoptik-style: IPC cursor + Behavior smoothing
+    readonly property real parallaxIntensity: 0.7  // overscan scale (lower = subtler)
 }

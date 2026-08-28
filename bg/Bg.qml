@@ -2,6 +2,11 @@ import Quickshell
 import QtQuick
 import ".."
 
+// Layered wallpaper with per-layer cursor parallax (Synoptik pattern):
+// - overscanned canvases (parent + overscan) so shifts never show edges
+// - one `transform: Translate` per layer, scaled by layer depth
+// - smoothing = Behavior + NumberAnimation (no timers, no idle CPU)
+//   cursor source = Cursor singleton (persistent Hyprland IPC poller)
 PanelWindow {
     id: bg
 
@@ -14,7 +19,6 @@ PanelWindow {
     color: "transparent"
 
     // bar reserves space; give bg the SAME claim so it fills the full screen
-    // (layer-shell: a surface's own zone sizes it into the reserved strip)
     exclusiveZone: Math.round(Theme.barExclusive
         * Math.max(1, Math.min(1.6, width / 2560)))
 
@@ -25,44 +29,44 @@ PanelWindow {
         right: true
     }
 
-    // ---- parallax engine ----
-    // x = -50 + (center - pointer.x) * 0.05 : content moves OPPOSITE the
-    // cursor; closer layers (higher depth) move more. pointer tracked
-    // globally (Cursor singleton) so it follows the mouse everywhere.
-    property real engineX: 0     // smoothed cursor-center delta [-0.5..0.5]
-    property real engineY: 0
-    property real phaseT: 0
+    // ---- parallax math (per-window, normalized to this monitor) ----
+    readonly property bool par: Theme.parallaxEnabled
+    readonly property real intensity: Theme.parallaxIntensity
+    readonly property real overscanX: width * 0.14 * intensity
+    readonly property real overscanY: height * 0.09 * intensity
 
-    // slow idle drift (Lissajous periods ~30-60s) keeps the scene alive
-    readonly property real driftX: Theme.parallaxEnabled ? Math.sin(bg.phaseT * 0.07) * 18 : 0
-    readonly property real driftY: Theme.parallaxEnabled ? Math.cos(bg.phaseT * 0.055) * 12 : 0
-
-    function normX() { return (Cursor.gx - (bg.modelData?.x ?? 0)) / bg.width - 0.5; }
-    function normY() { return (Cursor.gy - (bg.modelData?.y ?? 0)) / bg.height - 0.5; }
-
-    function shiftX(depth) { return Theme.parallaxEnabled ? (-bg.engineX * 120 + bg.driftX) * depth : 0; }
-    function shiftY(depth) { return Theme.parallaxEnabled ? (-bg.engineY * 95 + bg.driftY) * depth : 0; }
-
-    Timer {
-        interval: 16
-        running: Theme.parallaxEnabled   // dead when parallax disabled
-        repeat: true
-        onTriggered: {
-            const k = Math.exp(-3.2 * 0.016);
-            if (Cursor.ready) {
-                bg.engineX += (bg.normX() - bg.engineX) * (1 - k);
-                bg.engineY += (bg.normY() - bg.engineY) * (1 - k);
-            } else {
-                // cursor not reported yet: ease back to center
-                bg.engineX *= (1 - k);
-                bg.engineY *= (1 - k);
-            }
-            bg.phaseT += 0.016;
-        }
+    readonly property real cursorNormX: {
+        if (!Cursor.ready || !modelData)
+            return 0.5;
+        return Math.max(0.0, Math.min(1.0,
+            (Cursor.gx - (modelData.x ?? 0)) / (modelData.width || 1)));
+    }
+    readonly property real cursorNormY: {
+        if (!Cursor.ready || !modelData)
+            return 0.5;
+        return Math.max(0.0, Math.min(1.0,
+            (Cursor.gy - (modelData.y ?? 0)) / (modelData.height || 1)));
     }
 
-    // click = next girl state (motion comes from the global cursor, so it
-    // works even when the pointer is over other windows)
+    // content moves OPPOSITE the cursor; nearer layers (higher depth) more
+    readonly property real targetX: par ? (cursorNormX - 0.5) * -overscanX : 0
+    readonly property real targetY: par ? (cursorNormY - 0.5) * -overscanY : 0
+
+    property real smoothX: targetX
+    property real smoothY: targetY
+
+    Behavior on smoothX {
+        NumberAnimation { duration: 260; easing.type: Easing.OutQuad }
+    }
+    Behavior on smoothY {
+        NumberAnimation { duration: 260; easing.type: Easing.OutQuad }
+    }
+
+    // per-depth offset (depth 1 = room plate reference)
+    function layerX(depth) { return smoothX * depth; }
+    function layerY(depth) { return smoothY * depth; }
+
+    // click = next girl state
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
@@ -71,52 +75,68 @@ PanelWindow {
         onClicked: RoomState.nextState()
     }
 
-    // ---- layers (each wrapped in an Item so offsets don't fight anchors) ----
-    // bottom: red-dominant imagery (game CGs / sky frames). shown THROUGH
-    // the transparent windows of the room plate on top. cycled via launcher.
-    Image {
-        id: wall
+    // ---- layer 1 (far): red-dominant imagery seen through the windows ----
+    Item {
         z: -2
-        anchors.fill: parent
-        fillMode: Image.PreserveAspectCrop
-        smooth: false
-        layer.enabled: true
-        layer.smooth: false
-        layer.textureSize: Qt.size(width, height)
-        source: RoomState.wallIndex >= 0
-            ? `../assets/bg/walls/${RoomState.walls[RoomState.wallIndex]}.png`
-            : "../assets/bg/walls/room.png"
+        anchors.centerIn: parent
+        width: parent.width + bg.overscanX * 1.5
+        height: parent.height + bg.overscanY * 1.5
+
+        transform: Translate {
+            x: bg.layerX(0.45)
+            y: bg.layerY(0.45)
+        }
+
+        Image {
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectCrop
+            smooth: false
+            source: RoomState.wallIndex >= 0
+                ? `../assets/bg/walls/${RoomState.walls[RoomState.wallIndex]}.png`
+                : "../assets/bg/walls/room.png"
+        }
     }
 
-    // top: grey/dark room plate with transparent window cutouts — the red
-    // background layer shows through them (the game's layered look)
-    Image {
-        id: roomPlate
+    // ---- layer 2 (mid): room plate, transparent window cutouts ----
+    Item {
         z: 0
-        anchors.fill: parent
-        fillMode: Image.PreserveAspectCrop
-        smooth: false
-        layer.enabled: true
-        layer.smooth: false
-        layer.textureSize: Qt.size(width, height)
-        source: "../assets/bg/bg.png"
+        anchors.centerIn: parent
+        width: parent.width + bg.overscanX * 1.5
+        height: parent.height + bg.overscanY * 1.5
+
+        transform: Translate {
+            x: bg.layerX(1.0)
+            y: bg.layerY(1.0)
+        }
+
+        Image {
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectCrop
+            smooth: false
+            source: "../assets/bg/bg.png"
+        }
     }
 
-    // Milk-Chan: only on the main (widest) monitor, closest layer
+    // ---- layer 3 (near): Milk-Chan, main monitor only ----
     MilkChan {
         readonly property var main: bg.mainScreen()
         visible: (modelData?.width === main?.width) && main != null
                 && RoomState.girlVisible
 
-        scale: Math.min(1.0, parent.height / 1027 * 0.7)
+        // planted at the bottom edge; horizontal-only parallax so she never
+        // detaches from or clips past the bottom
+        scale: Math.min(1.05, parent.height / 1027 * 0.78)
         speaking: RoomState.speaking
         layer.enabled: true
         layer.smooth: false
-        x: bg.shiftX(1.7)
         anchors {
             bottom: parent.bottom
             right: parent.right
             rightMargin: parent.width * 0.08
+        }
+
+        transform: Translate {
+            x: bg.layerX(1.6)
         }
 
         MouseArea {
