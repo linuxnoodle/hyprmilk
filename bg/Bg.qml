@@ -195,7 +195,8 @@ PanelWindow {
         function onWallIndexChanged() {
             // freeze the outgoing frame, fade the new one in
             if (bg._prevWallIdx >= 0 && RoomState.walls?.length) {
-                wallCanvas.wallOld.source =
+                // ids are document-scope aliases, not object properties
+                wallOld.source =
                     `../assets/bg/walls/${RoomState.walls[bg._prevWallIdx]}.png`;
                 bg.wallFade = 0;
                 Qt.callLater(() => bg.wallFade = 1);
