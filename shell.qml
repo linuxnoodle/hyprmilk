@@ -1,9 +1,14 @@
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Services.Notifications
 import QtQuick
 import "bg" as Bg
 import "bar" as Bar
 import "dialogue" as Dlg
+import "launcher" as L
+import "notifs" as N
+import "osd" as O
+import "music" as M
 
 ShellRoot {
 
@@ -17,6 +22,19 @@ ShellRoot {
                 if (m?.activeWorkspace)
                     RoomState.currentWs = m.activeWorkspace.id;
             }
+        }
+    }
+
+    // notification server: track everything, toast on arrival
+    NotificationServer {
+        id: notifServer
+        keepOnReload: true
+
+        property var toastHost: null
+
+        onNotification: n => {
+            n.tracked = true;
+            toastHost?.push(n);
         }
     }
 
@@ -40,6 +58,7 @@ ShellRoot {
         exclusionMode: ExclusionMode.Ignore
         aboveWindows: false
         color: "transparent"
+        visible: box.visible   // unmap when idle — parked transparent windows flicker
 
         anchors {
             bottom: true
@@ -47,9 +66,7 @@ ShellRoot {
             right: true
         }
         implicitHeight: 220
-        WlrMask {}
-
-        component WlrMask: Region {
+        mask: Region {
             item: box.visible ? box : null
         }
 
@@ -62,6 +79,22 @@ ShellRoot {
             }
         }
     }
+
+    L.Launcher {}
+
+    N.Center {
+        server: notifServer
+    }
+
+    N.Toasts {
+        id: toasts
+        server: notifServer
+        Component.onCompleted: notifServer.toastHost = this
+    }
+
+    O.Osd {}
+
+    M.PlayerPopup {}
 
     // room ambient follows the active room
     Connections {

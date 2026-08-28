@@ -19,6 +19,7 @@ QtObject {
 
     property int skyboxIndex: 0
     property int plateIndex: 0
+    property bool showSkybox: false   // intro-style skybox art; off by default
     property bool voiceMuted: false
     property bool speaking: false   // dialogue typewriter active -> sprite mouth
 
@@ -71,6 +72,12 @@ QtObject {
         } while (range.length > 1 && next === skyboxIndex);
         skyboxIndex = next;
         skyboxChanged(next);
+    }
+
+    // launcher action: show the skybox layer and pick a new frame
+    function toggleSkybox() {
+        showSkybox = true;
+        rerollSkybox();
     }
 
     function nextPlate() {

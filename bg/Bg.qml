@@ -24,40 +24,26 @@ PanelWindow {
         id: stage
         anchors.fill: parent
 
-        // room plate (point-and-click scene of current workspace room)
+        // room plate: static flat red/black bedroom (bg.png) on every workspace.
+        // game room-scene plates are near-black; user wants no flashing/black walls.
+        // layer texture: repaint-stable (Qt flicker workaround on pointer hover)
         Image {
             id: roomPlate
             anchors.fill: parent
             fillMode: Image.PreserveAspectCrop
             smooth: false
-            cache: false
-            source: {
-                const r = RoomState.room;
-                if (!r)
-                    return "../assets/bg/bg.png";
-                if (r.id === "hub" || r.id === "ost")
-                    return "../assets/bg/bg.png";
-                const plates = r.plates ?? [];
-                const p = plates[RoomState.plateIndex % Math.max(plates.length, 1)];
-                return p ? `../assets/rooms/${r.id}/${p}.png` : "../assets/bg/bg.png";
-            }
-            onSourceChanged: fadeAnim.restart()
-
-            SequentialAnimation on opacity {
-                id: fadeAnim
-                running: false
-                NumberAnimation { to: 0.15; duration: Theme.animFast }
-                NumberAnimation { to: 1; duration: Theme.animSlow }
-            }
+            layer.enabled: true
+            layer.smooth: false
+            layer.textureSize: Qt.size(width, height)
+            source: "../assets/bg/bg.png"
         }
 
-        // Milk-Chan, standing right of center — only in the hub (bedroom),
-        // like the game. Other rooms are scene plates without the sprite.
+        // Milk-Chan, standing right of center — always in the red/black room
         MilkChan {
-            visible: RoomState.roomId === "hub"
-            // girl takes ~70% of screen height (game sprite is 1959x1027)
             scale: Math.min(1.0, parent.height / 1027 * 0.7)
             speaking: RoomState.speaking
+            layer.enabled: true
+            layer.smooth: false
             anchors {
                 bottom: parent.bottom
                 right: parent.right
@@ -75,11 +61,12 @@ PanelWindow {
         fillMode: Image.PreserveAspectCrop
         smooth: true
         cache: false
+        visible: RoomState.showSkybox
         source: RoomState.skyboxIndex > 0
             ? `../assets/bg/mirror/${RoomState.skyboxIndex}.png` : ""
     }
 
-    // z-2: skybox (cloud variants, random per session / re-rollable)
+    // z-2: skybox (intro-style cloud art; hidden unless enabled via launcher)
     Image {
         id: skybox
         z: -2
@@ -87,15 +74,8 @@ PanelWindow {
         fillMode: Image.PreserveAspectCrop
         smooth: false
         cache: false
+        visible: RoomState.showSkybox
         source: RoomState.skyboxIndex > 0
             ? `../assets/bg/skybox/${RoomState.skyboxIndex}.png` : ""
-    }
-
-    // slow room plate pan, like the game's sequential scene states
-    Timer {
-        interval: 45000 + Math.random() * 30000
-        running: true
-        repeat: true
-        onTriggered: RoomState.nextPlate()
     }
 }

@@ -46,10 +46,21 @@ def sprites():
     return out
 
 
+def radio():
+    out = {}
+    for st in sorted((A / "audio/radio").iterdir()):
+        if st.is_dir():
+            out[st.name.replace("radio", "")] = sorted(
+                p.name for p in st.iterdir() if p.suffix in (".mp3", ".ogg")
+            )
+    return out
+
+
 def main():
     data = {
         "skybox": skybox(),
         "sprites": sprites(),
+        "radio": radio(),
     }
     (ROOT / "data/manifest.json").write_text(
         json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8"
@@ -57,7 +68,8 @@ def main():
     n_emotions = sum(len(v) for v in data["sprites"].values())
     print(
         f">> manifest: {len(data['skybox']['all'])} skybox pairs, "
-        f"{len(data['sprites'])} poses, {n_emotions} pose-emotion combos"
+        f"{len(data['sprites'])} poses, {n_emotions} pose-emotion combos, "
+        f"radio: { {k: len(v) for k, v in data['radio'].items()} }"
     )
 
 

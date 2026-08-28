@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Services.Pipewire
 import ".."
 import "../widgets"
 
@@ -17,6 +18,7 @@ PanelWindow {
     readonly property real uiScale: Math.max(1, Math.min(1.6, width / 2560))
     readonly property int segPad: Math.round(12 * uiScale)
     readonly property int segGap: Math.round(16 * uiScale)
+    readonly property var sink: Pipewire.defaultAudioSink?.audio ?? null
 
     WlrLayershell.namespace: "shell:bar"
     screen: modelData
@@ -69,6 +71,34 @@ PanelWindow {
                 }
                 Workspaces {
                     bar: root
+                }
+            }
+        }
+
+        // center: music (only when something plays)
+        Border {
+            anchors {
+                horizontalCenter: parent.horizontalCenter
+                top: parent.top
+                bottom: parent.bottom
+            }
+            implicitWidth: mprisRow.implicitWidth + 2 * root.segPad
+            visible: mpris.displayText !== ""
+
+            Behavior on implicitWidth {
+                NumberAnimation { duration: Theme.animMed }
+            }
+
+            RowLayout {
+                id: mprisRow
+                anchors {
+                    fill: parent
+                    leftMargin: root.segPad
+                    rightMargin: root.segPad
+                }
+                MprisWidget {
+                    id: mpris
+                    uiScale: root.uiScale
                 }
             }
         }
@@ -133,6 +163,33 @@ PanelWindow {
                 }
 
                 Text {
+                    function volPct() {
+                        return `${Math.round((root.sink?.volume ?? 0) * 100)}%`;
+                    }
+                    text: root.sink?.muted ? `VOL--` : volPct()
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Math.round(12 * root.uiScale)
+                    color: Theme.fg
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (root.sink)
+                                root.sink.muted = !root.sink.muted;
+                        }
+                        onWheel: e => {
+                            if (!root.sink)
+                                return;
+                            e.accepted = true;
+                            const step = Math.sign(e.angleDelta.y) * 0.05;
+                            root.sink.volume = Math.max(0, Math.min(1,
+                                (root.sink.volume ?? 0) + step));
+                        }
+                    }
+                }
+
+                Text {
                     text: RoomState.voiceMuted ? "🔇" : "🔊"
                     font.family: Theme.fontFamily
                     font.pixelSize: Math.round(12 * root.uiScale)
@@ -142,6 +199,19 @@ PanelWindow {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: RoomState.toggleVoice()
+                    }
+                }
+
+                Text {
+                    text: "🔔"
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Math.round(12 * root.uiScale)
+                    color: Ui.notifCenterVisible ? Theme.fg : Theme.fg2
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Ui.notifCenterVisible = !Ui.notifCenterVisible
                     }
                 }
 

@@ -18,13 +18,7 @@ Item {
     property real scale: 0.5
 
     readonly property string base: `../assets/sprites/${pose}/${emotion}`
-    readonly property var manifest: RoomState.manifest.sprites?.[pose]?.[emotion] ?? null
-    // clamp variant to what this pose/emotion actually ships (kills transient
-    // combos while pose/emotion/variant update in sequence)
-    readonly property int effVariant: (manifest?.bodies ?? []).includes(variant)
-        ? variant : (manifest?.bodies?.[0] ?? 1)
-    // eye sources: self-contained single expressions so pose/emotion/variant
-    // are read as one snapshot (no mixed-staleness intermediate paths)
+    // sources are self-contained single expressions (one snapshot each)
     readonly property string eyesOpenSrc: {
         const m = RoomState.manifest.sprites?.[pose]?.[emotion];
         const v = (m?.bodies ?? []).includes(variant) ? variant : (m?.bodies?.[0] ?? 1);
@@ -36,19 +30,43 @@ Item {
         const v = (m?.bodies ?? []).includes(variant) ? variant : (m?.bodies?.[0] ?? 1);
         return (m?.eyes[String(v)] ?? []).includes("half")
             ? `../assets/sprites/${pose}/${emotion}/${emotion}_${v}_eyes_half.png`
-            : (m ? `../assets/sprites/${pose}/${emotion}/${emotion}_eyes_closed.png` : "");
+            : (m && (m?.eyes[String(v)] ?? []).includes("open")
+                ? `../assets/sprites/${pose}/${emotion}/${emotion}_eyes_closed.png` : "");
     }
     readonly property string eyesClosedSrc: eyesHalfSrc !== "" ? `../assets/sprites/${pose}/${emotion}/${emotion}_eyes_closed.png` : ""
     readonly property bool hasEyes: eyesOpenSrc !== ""
-    readonly property string bodySrc: `${base}/${emotion}_${effVariant}.png`
+    // body: self-contained snapshot (no transient combos)
+    readonly property string bodySrc: {
+        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
+        const v = (m?.bodies ?? []).includes(variant) ? variant : (m?.bodies?.[0] ?? 1);
+        return `../assets/sprites/${pose}/${emotion}/${emotion}_${v}.png`;
+    }
     // mouth: own flap frames, else the pose's neutral emotion flap frames (game does this)
-    readonly property string neutralMouth: `../assets/sprites/${pose}/neutral`
-    readonly property var mouthSet: manifest?.mouths ?? []
-    readonly property string mouthClosedSrc: mouthSet.includes("closed") ? `${base}/${emotion}_mouth_closed.png` : `${neutralMouth}/neutral_mouth_closed.png`
-    readonly property string mouthHalfSrc: mouthSet.includes("half") ? `${base}/${emotion}_mouth_half.png`
-        : mouthSet.includes("full") ? `${neutralMouth}/neutral_mouth_half.png` : ""
-    readonly property string mouthFullSrc: mouthSet.includes("full") ? `${base}/${emotion}_mouth_full.png`
-        : mouthSet.includes("half") ? `${neutralMouth}/neutral_mouth_full.png` : ""
+    readonly property string mouthClosedSrc: {
+        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
+        const mouths = m?.mouths ?? [];
+        return mouths.includes("closed")
+            ? `../assets/sprites/${pose}/${emotion}/${emotion}_mouth_closed.png`
+            : `../assets/sprites/${pose}/neutral/neutral_mouth_closed.png`;
+    }
+    readonly property string mouthHalfSrc: {
+        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
+        const mouths = m?.mouths ?? [];
+        if (mouths.includes("half"))
+            return `../assets/sprites/${pose}/${emotion}/${emotion}_mouth_half.png`;
+        if (mouths.includes("full"))
+            return `../assets/sprites/${pose}/neutral/neutral_mouth_half.png`;
+        return "";
+    }
+    readonly property string mouthFullSrc: {
+        const m = RoomState.manifest.sprites?.[pose]?.[emotion];
+        const mouths = m?.mouths ?? [];
+        if (mouths.includes("full"))
+            return `../assets/sprites/${pose}/${emotion}/${emotion}_mouth_full.png`;
+        if (mouths.includes("half"))
+            return `../assets/sprites/${pose}/neutral/neutral_mouth_full.png`;
+        return "";
+    }
 
     // game sprite is 1959x1027; keep native ratio, scale down
     implicitWidth: 1959 * scale
@@ -129,11 +147,12 @@ Item {
         }
     }
 
-    // gentle idle bob like the game's subtle motion
-    SequentialAnimation on y {
-        running: true
-        loops: Animation.Infinite
-        NumberAnimation { to: 6; duration: 3200; easing.type: Easing.InOutSine }
-        NumberAnimation { to: 0; duration: 3200; easing.type: Easing.InOutSine }
-    }
+    // gentle idle bob like the game's subtle motion — DISABLED: continuous
+    // repaint flickers the layer under the cursor on some Qt/qs versions
+    // SequentialAnimation on y {
+    //     running: true
+    //     loops: Animation.Infinite
+    //     NumberAnimation { to: 6; duration: 3200; easing.type: Easing.InOutSine }
+    //     NumberAnimation { to: 0; duration: 3200; easing.type: Easing.InOutSine }
+    // }
 }
