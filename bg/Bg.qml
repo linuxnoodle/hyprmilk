@@ -79,6 +79,12 @@ PanelWindow {
     }
 
     // click = next girl state
+    // wallpaper crossfade progress
+    property real wallFade: 1
+    Behavior on wallFade {
+        NumberAnimation { duration: 240; easing.type: Easing.InOutQuad }
+    }
+
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
@@ -113,7 +119,7 @@ PanelWindow {
             anchors.fill: parent
             fillMode: Image.PreserveAspectCrop
             smooth: false
-            opacity: wallFade
+            opacity: bg.wallFade
             source: RoomState.wallIndex >= 0
                 ? `../assets/bg/walls/${RoomState.walls[RoomState.wallIndex]}.png`
                 : "../assets/bg/walls/room.png"
@@ -191,8 +197,8 @@ PanelWindow {
             if (bg._prevWallIdx >= 0 && RoomState.walls?.length) {
                 wallCanvas.wallOld.source =
                     `../assets/bg/walls/${RoomState.walls[bg._prevWallIdx]}.png`;
-                wallCanvas.wallFade = 0;
-                Qt.callLater(() => wallCanvas.wallFade = 1);
+                bg.wallFade = 0;
+                Qt.callLater(() => bg.wallFade = 1);
             }
             bg._prevWallIdx = RoomState.wallIndex;
         }
