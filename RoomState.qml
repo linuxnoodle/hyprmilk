@@ -16,6 +16,7 @@ QtObject {
     property var dialogue: DialogueData.dialogue
     property var walls: WallsData.walls.walls
     property int wallIndex: -1   // chosen once at boot (real game imagery)
+    property int lastSayIndex: -1
 
     // ---- live state ----
     property int currentWs: 1
@@ -25,6 +26,7 @@ QtObject {
     property int plateIndex: 0
     property bool voiceMuted: false
     property bool speaking: false   // dialogue typewriter active -> sprite mouth
+    property bool dialogueVisible: false   // milk dialogue window present
 
     // sprite reseed trigger (bump to randomize pose/emotion/variant)
     property int spriteEpoch: 0
@@ -103,8 +105,13 @@ QtObject {
         const lines = dialogue[roomId];
         if (!lines?.length)
             return;
-        const line = lines[Math.floor(Math.random() * lines.length)];
-        say(line);
+        // avoid repeating the immediately-previous line (same object would
+        // not retrigger the dialogue box, making it look frozen)
+        let idx = Math.floor(Math.random() * lines.length);
+        if (lines.length > 1 && idx === lastSayIndex)
+            idx = (idx + 1) % lines.length;
+        lastSayIndex = idx;
+        say(lines[idx]);
     }
 
     function sayRoomIntro(roomId) {

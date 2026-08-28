@@ -52,6 +52,7 @@ Item {
         shownChars = 0;
         speaking = true;
         RoomState.speaking = true;
+        RoomState.dialogueVisible = true;
         visible = true;
         opacity = 1;
         typeTimer.start();
@@ -97,7 +98,8 @@ Item {
         ScriptAction {
             script: {
                 root.visible = false;
-                RoomState.speaking = false;   // mouth stops once text leaves
+                RoomState.speaking = false;          // mouth stops once text leaves
+                RoomState.dialogueVisible = false;   // unmaps the dialogue window
             }
         }
     }
@@ -117,6 +119,9 @@ Item {
     Connections {
         target: RoomState
         function onDialogueRequested(line) {
+            // null-then-set: re-emits with the SAME line object must still
+            // retrigger onLineChanged (same-object reassign doesn't notify)
+            root.line = null;
             root.line = line;
         }
     }
