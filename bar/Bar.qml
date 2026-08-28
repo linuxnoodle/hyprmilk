@@ -224,7 +224,7 @@ PanelWindow {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: Qt.exit()
+                        onClicked: Ui.controlVisible = !Ui.controlVisible
                     }
                 }
             }

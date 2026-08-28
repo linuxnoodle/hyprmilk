@@ -57,6 +57,19 @@ QtObject {
         spriteEpoch++;
     }
 
+    // hyprctl on this machine is a hyprlua shim that mangles bare dispatch
+    // strings; use the raw hyprland socket instead (verified working).
+    function dispatch(cmd) {
+        Quickshell.execDetached(["python3", "-c",
+            "import socket, os\n" +
+            "sig = os.environ.get('HYPRLAND_INSTANCE_SIGNATURE', '')\n" +
+            "p = f'/run/user/{os.getuid()}/hypr/{sig}/.socket.sock'\n" +
+            "s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n" +
+            "s.connect(p)\n" +
+            "s.sendall('dispatch " + cmd + "'.encode())\n" +
+            "s.close()"]);
+    }
+
     // launcher/IPC action: toggle Milk-Chan visibility
     function toggleGirl() {
         girlVisible = !girlVisible;

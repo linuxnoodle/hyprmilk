@@ -74,7 +74,7 @@ MouseArea {
         const idx = wsIds.indexOf(currentIndex());
         const step = -Math.sign(e.angleDelta.y);
         const at = Math.max(0, Math.min(wsIds.length - 1, idx + step));
-        Hyprland.dispatch(`workspace ${wsIds[at]}`);
+        RoomState.dispatch(`workspace ${wsIds[at]}`);
     }
 
     Connections {
@@ -110,7 +110,7 @@ MouseArea {
                 implicitHeight: Math.round(24 * (bar?.uiScale ?? 1))
                 acceptedButtons: Qt.LeftButton
                 cursorShape: Qt.PointingHandCursor
-                onPressed: Hyprland.dispatch(`workspace ${wsIndex}`)
+                onPressed: RoomState.dispatch(`workspace ${wsIndex}`)
 
                 Rectangle {
                     anchors.fill: parent

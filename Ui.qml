@@ -12,6 +12,7 @@ Singleton {
     property bool launcherVisible: false
     property bool notifCenterVisible: false
     property bool playerPopupVisible: false
+    property bool controlVisible: false
 
     signal toastRequested(string summary, string body)
 
@@ -28,6 +29,10 @@ Singleton {
 
         function togglePlayer(): void {
             root.playerPopupVisible = !root.playerPopupVisible;
+        }
+
+        function toggleControl(): void {
+            root.controlVisible = !root.controlVisible;
         }
 
         function cycleWallpaper(): void {

@@ -9,6 +9,7 @@ import "launcher" as L
 import "notifs" as N
 import "osd" as O
 import "music" as M
+import "controlcenter" as Cc
 
 ShellRoot {
 
@@ -134,6 +135,8 @@ ShellRoot {
     O.Osd {}
 
     M.PlayerPopup {}
+
+    Cc.ControlCenter {}
 
     // periodic dialogue — a line every few minutes, on its own
     Timer {
