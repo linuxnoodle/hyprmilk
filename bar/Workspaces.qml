@@ -7,14 +7,16 @@ import Quickshell.Hyprland
 import ".."
 import "../data/wsbindings.js" as Binds
 
-// workspace dots — one per workspace BINDED to this monitor
-// (from hyprland.lua workspace rules: DP-3=1-5, DP-2=6-10, DP-1=11)
+// workspace chips — one per workspace BINDED to this monitor
+// (hyprland.lua rules: DP-3=1-5, DP-2=6-10, DP-1=11).
+// occupied (has windows) = solid; empty = outline-only; active = milk red.
 MouseArea {
     id: root
 
     required property var bar
     readonly property HyprlandMonitor monitor: Hyprland.monitorFor(bar.screen)
     property var wsIds: []
+    property var occupied: ({})   // wsId -> true when it has windows
 
     implicitWidth: row.implicitWidth
     implicitHeight: row.implicitHeight
@@ -28,35 +30,37 @@ MouseArea {
     function refresh() {
         const name = monitor?.name ?? "";
         const stat = Binds.wsbindings[name];
-        // static binding map from hyprland.lua (includes empty bound ws)
-        if (stat && stat.length) {
-            root.wsIds = stat.slice();
-            return;
-        }
-        // fallback: whatever hyprctl currently reports for this monitor
-        if (!_parser || _parser.running)
+        if (stat && stat.length)
+            root.wsIds = stat.slice();   // static binding map (incl. empty ws)
+        queryOccupancy();
+    }
+
+    // occupancy: hyprctl workspaces -> which ws have windows
+    function queryOccupancy() {
+        if (_occParser && _occParser.running)
             return;
         root._fallbackPath = "/tmp/hyprmilk-ws.json";
-        _parser = procComp.createObject(root);
-        _parser.command = ["sh", "-c", "hyprctl workspaces -j > /tmp/hyprmilk-ws.json 2>/dev/null"];
-        _parser.exited.connect(() => {
+        _occParser = procComp.createObject(root);
+        _occParser.command = ["sh", "-c",
+            "hyprctl workspaces -j > /tmp/hyprmilk-ws.json 2>/dev/null"];
+        _occParser.exited.connect(() => {
             try {
-                const ws = JSON.parse(fv.text());
-                const ids = ws.filter(w => (w.monitor ?? "") === name)
-                              .map(w => w.id).sort((a, b) => a - b);
-                if (ids.length)
-                    root.wsIds = ids;
+                const occ = {};
+                for (const w of JSON.parse(fv.text()))
+                    occ[w.id] = (w.windows ?? 0) > 0;
+                root.occupied = occ;
             } catch (e) {}
-            root._parser = null;
+            root._occParser = null;
         });
-        _parser.running = true;
+        _occParser.running = true;
     }
 
     property Component procComp: Component { Process { } }
     property var _parser: null
-    property string _fallbackPath: ""   // set only when the fallback is used
+    property var _occParser: null
+    property string _fallbackPath: ""
 
-    // hyprctl fallback reader (path stays empty until fallback actually runs)
+    // hyprctl reader
     FileView {
         id: fv
         path: root._fallbackPath
@@ -77,7 +81,10 @@ MouseArea {
         target: Hyprland
 
         function onRawEvent(event) {
-            if (event.name === "workspace" || event.name === "moveworkspace")
+            const names = ["workspace", "moveworkspace", "createworkspace",
+                           "destroyworkspace", "movewindow", "openwindow",
+                           "closewindow"];
+            if (names.includes(event.name))
                 root.refresh();
         }
     }
@@ -96,6 +103,7 @@ MouseArea {
                 readonly property bool active:
                     (root.monitor?.activeWorkspace ?? null) != null
                     && root.monitor.activeWorkspace.id == wsIndex
+                readonly property bool hasWindows: root.occupied[wsIndex] === true
 
                 implicitWidth: Math.round(24 * (bar?.uiScale ?? 1))
                 implicitHeight: Math.round(24 * (bar?.uiScale ?? 1))
@@ -107,7 +115,12 @@ MouseArea {
                     anchors.fill: parent
                     anchors.margins: 2
                     radius: 0   // pixel rectangles, not circles
-                    color: active ? Theme.accent2 : Theme.bg3
+                    // active: milk red; occupied: darker grey; empty: hollow
+                    color: active ? Theme.accent2
+                        : delegate.hasWindows ? "#262a33"
+                        : "transparent"
+                    border.width: delegate.hasWindows ? 0 : 1
+                    border.color: "#3b4045"
                     Behavior on color {
                         ColorAnimation { duration: 300 }
                     }
@@ -118,7 +131,9 @@ MouseArea {
                     text: wsIndex
                     font.family: Theme.fontFamily
                     font.pixelSize: Math.round(11 * (bar?.uiScale ?? 1))
-                    color: active ? Theme.fg : Theme.fg2
+                    color: active ? Theme.fg
+                        : delegate.hasWindows ? "#8c2b2b"
+                        : "#5c2222"   // empty: dimmer
                     smooth: false
                 }
             }

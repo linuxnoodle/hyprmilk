@@ -61,6 +61,11 @@ Item {
             Sfx.sfx("assets/audio/" + line.sfx.replace(/^audio\//, ""), 70);
     }
 
+    function dismiss() {
+        hideTimer.stop();
+        hideAnim.start();
+    }
+
     function finish() {
         speaking = false;
         RoomState.speaking = false;   // mouth stops with the audio (slow_done)
@@ -109,11 +114,11 @@ Item {
     MouseArea {
         anchors.fill: parent
         onClicked: {
-            // skip / advance
+            // click 1: skip typing to the end; click 2: dismiss now
             if (root.speaking) {
                 root.finish();
             } else {
-                RoomState.sayRandom();
+                root.dismiss();
             }
         }
     }
