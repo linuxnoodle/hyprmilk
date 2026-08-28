@@ -106,12 +106,15 @@ PanelWindow {
             y: bg.layerY(0.45)
         }
 
-        // crossfade: old frame lingers as backdrop while new fades in fast
+        // crossfade: the OLD frame fades out over the new one, which is kept
+        // fully opaque so it decodes eagerly (no opacity-0 lazy-decode pop).
         Image {
             id: wallOld
+            z: 2                      // above wallNew during the transition
             anchors.fill: parent
             fillMode: Image.PreserveAspectCrop
             smooth: false
+            opacity: 1
             visible: source !== ""
         }
         Image {
@@ -119,10 +122,24 @@ PanelWindow {
             anchors.fill: parent
             fillMode: Image.PreserveAspectCrop
             smooth: false
-            opacity: bg.wallFade
             source: RoomState.wallIndex >= 0
                 ? `../assets/bg/walls/${RoomState.walls[RoomState.wallIndex]}.png`
                 : "../assets/bg/walls/room.png"
+            asynchronous: false
+        }
+
+        // fades the outgoing frame away, revealing the (always-decoded) new one
+        NumberAnimation {
+            id: wallFadeOut
+            target: wallOld; property: "opacity"
+            from: 1; to: 0
+            duration: 700
+            easing.type: Easing.InOutQuad
+        }
+        Timer {
+            id: wallFadeReset
+            interval: 720
+            onTriggered: wallOld.z = 0
         }
     }
 
@@ -133,13 +150,6 @@ PanelWindow {
         anchors.centerIn: parent
         width: parent.width + bg.overscanX * 1.5
         height: parent.height + bg.overscanY * 1.5
-
-        // dips during transitions so the fading layer shows screen-wide
-        property real plateFade: 1
-        Behavior on plateFade {
-            NumberAnimation { duration: 600; easing.type: Easing.InOutQuad }
-        }
-        opacity: plateFade
 
         transform: Translate {
             x: bg.layerX(1.0)
@@ -206,11 +216,8 @@ PanelWindow {
                 wallOld.source =
                     `../assets/bg/walls/${RoomState.walls[bg._prevWallIdx]}.png`;
                 bg.wallFade = 0;
-                plateCanvas.plateFade = 0.45;   // reveal the blend everywhere
-                Qt.callLater(() => {
-                    bg.wallFade = 1;
-                    plateCanvas.plateFade = 1;
-                });
+                Qt.callLater(() => wallFadeAnim.start());
+                // (completion is handled by wallNew.onStatusChanged)
             }
             bg._prevWallIdx = RoomState.wallIndex;
         }
