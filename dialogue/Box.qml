@@ -56,13 +56,14 @@ Item {
         visible = true;
         opacity = 1;
         typeTimer.start();
-        Sfx.randomNice();
+        Sfx.speakLoop();   // game-faithful talking sound while the line shows
         if (line.sfx)
             Sfx.sfx("assets/audio/" + line.sfx.replace(/^audio\//, ""), 70);
     }
 
     function finish() {
         speaking = false;
+        Sfx.speakLoopStop();   // slow_done: typing finished, loop fades
         shownChars = fullText.length;
         typeTimer.stop();
         hideTimer.restart();
@@ -71,7 +72,8 @@ Item {
 
     Timer {
         id: typeTimer
-        interval: 28 // ~35 cps, game feels slower than default
+        interval: 50 // 20 cps — the game's config.slow_cps; makes the talk
+                     // loop's lifespan match the text duration
         repeat: true
         running: root.speaking
         onTriggered: {

@@ -8,13 +8,39 @@ import QtQuick
 QtObject {
     id: root
 
-    // master audio switch — off for now (fade/IPC layers kept for later)
-    property bool enabled: false
+    // speech on (talking loop), ambient stays off
+    property bool enabled: true          // gate for speech + one-shots
+    property bool ambientEnabled: false  // room ambience loops: off
 
     property bool voiceMuted: false   // mirrors RoomState.voiceMuted
 
     // dialogue sfx only when the desktop/wallpaper is focused
     function focusOk() { return RoomState.wallpaperFocused; }
+
+    // ---- talking loop: narr.ogg while a line is on screen ----
+    property var _talk: null
+    property string _talkMarker: "hyprmilk-talk"
+
+    function speakLoop() {
+        if (!enabled || voiceMuted || !focusOk())
+            return;
+        speakLoopStop();
+        _talk = procComp.createObject(root);
+        _talk.command = ["mpv", "--no-video", "--really-quiet", "--loop-file=inf",
+                         "--volume=55",
+                         Qt.resolvedUrl("assets/audio/ui/narr.ogg").toString().replace("file://", "")];
+        _talk.running = true;
+    }
+
+    function speakLoopStop() {
+        if (_talk) {
+            // ~0.3s fade-out like the game (kill after delay)
+            Quickshell.execDetached(["sh", "-c",
+                "sleep 0.3; pkill -f hyprmilk-talk 2>/dev/null || true"]);
+            Quickshell.execDetached(["sh", "-c", "pkill -f narr.ogg 2>/dev/null || true"]);
+            _talk = null;
+        }
+    }
 
     function sfx(path, volume) {
         if (!enabled || voiceMuted || !focusOk())
@@ -86,7 +112,7 @@ QtObject {
     }
 
     function ambient(path) {
-        if (!enabled) {
+        if (!enabled || !ambientEnabled) {
             stopAmbient();
             return;
         }
