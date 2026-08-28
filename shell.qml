@@ -144,6 +144,20 @@ ShellRoot {
         onTriggered: RoomState.sayRandom()
     }
 
+    // idle mood swings: random pose/emotion every 45-150s (never while
+    // speaking, so the mouth stays synced)
+    Timer {
+        id: idleMood
+        interval: 45000 + Math.random() * 105000
+        running: true
+        repeat: true
+        onTriggered: {
+            if (!RoomState.speaking && RoomState.girlVisible)
+                RoomState.reseedSprite();
+            idleMood.interval = 45000 + Math.random() * 105000;
+        }
+    }
+
     // room ambient follows the active room
     Connections {
         target: RoomState
