@@ -51,6 +51,7 @@ PanelWindow {
         const q = searchField.text.toLowerCase().trim();
         const acts = [
             { name: "Switch wallpaper", comment: "next game CG / sky frame", action: () => RoomState.cycleWallpaper() },
+            { name: "Toggle Milk-Chan", comment: "show / hide the girl", action: () => RoomState.toggleGirl() },
             { name: "Talk to Milk-Chan", comment: "random dialogue line", action: () => RoomState.sayRandom() },
             { name: "Game radio", comment: Music.radioPlaying ? "stop radio" : "play station 1", action: () => Music.radioPlaying ? Music.stopRadio() : Music.startStation(1) },
         ];

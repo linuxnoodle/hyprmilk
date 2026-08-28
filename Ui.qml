@@ -34,6 +34,10 @@ Singleton {
             RoomState.cycleWallpaper();
         }
 
+        function toggleGirl(): void {
+            RoomState.toggleGirl();
+        }
+
         function sayLine(): void {
             RoomState.sayRandom();
         }

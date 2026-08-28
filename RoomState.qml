@@ -27,6 +27,7 @@ QtObject {
     property bool voiceMuted: false
     property bool speaking: false   // dialogue typewriter active -> sprite mouth
     property bool dialogueVisible: false   // milk dialogue window present
+    property bool girlVisible: true   // Milk-Chan sprite shown
 
     // sprite reseed trigger (bump to randomize pose/emotion/variant)
     property int spriteEpoch: 0
@@ -55,6 +56,11 @@ QtObject {
         spriteEpoch++;
     }
 
+    // launcher/IPC action: toggle Milk-Chan visibility
+    function toggleGirl() {
+        girlVisible = !girlVisible;
+    }
+
     // launcher action: cycle the wallpaper (red-dominant layer behind the
     // room plate's transparent windows)
     function cycleWallpaper() {
@@ -62,6 +68,7 @@ QtObject {
             return;
         wallIndex = (wallIndex + 1) % walls.length;
         wallChanged(wallIndex);
+    }
     }
 
     function comboList() {

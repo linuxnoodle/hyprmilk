@@ -106,6 +106,7 @@ PanelWindow {
     MilkChan {
         readonly property var main: bg.mainScreen()
         visible: (modelData?.width === main?.width) && main != null
+                && RoomState.girlVisible
 
         scale: Math.min(1.0, parent.height / 1027 * 0.7)
         speaking: RoomState.speaking
