@@ -3,3 +3,4 @@ singleton RoomState RoomState.qml
 singleton Sfx Sfx.qml
 singleton Ui Ui.qml
 singleton Music Music.qml
+singleton Cursor Cursor.qml

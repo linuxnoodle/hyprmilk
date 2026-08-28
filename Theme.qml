@@ -25,4 +25,6 @@ QtObject {
     readonly property int animFast: 150
     readonly property int animMed: 250
     readonly property int animSlow: 400
+
+    readonly property bool parallaxEnabled: false   // disabled: not smooth enough yet
 }

@@ -36,6 +36,7 @@ MouseArea {
         // fallback: whatever hyprctl currently reports for this monitor
         if (!_parser || _parser.running)
             return;
+        root._fallbackPath = "/tmp/hyprmilk-ws.json";
         _parser = procComp.createObject(root);
         _parser.command = ["sh", "-c", "hyprctl workspaces -j > /tmp/hyprmilk-ws.json 2>/dev/null"];
         _parser.exited.connect(() => {
@@ -53,11 +54,12 @@ MouseArea {
 
     property Component procComp: Component { Process { } }
     property var _parser: null
+    property string _fallbackPath: ""   // set only when the fallback is used
 
-    // hyprctl fallback reader
+    // hyprctl fallback reader (path stays empty until fallback actually runs)
     FileView {
         id: fv
-        path: "/tmp/hyprmilk-ws.json"
+        path: root._fallbackPath
         blockLoading: true
     }
 

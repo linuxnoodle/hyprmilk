@@ -62,10 +62,10 @@ Item {
 
     function finish() {
         speaking = false;
-        RoomState.speaking = false;
         shownChars = fullText.length;
         typeTimer.stop();
         hideTimer.restart();
+        // keep RoomState.speaking true: text is still on screen (mouth flaps)
     }
 
     Timer {
@@ -94,7 +94,12 @@ Item {
     SequentialAnimation {
         id: hideAnim
         NumberAnimation { target: root; property: "opacity"; to: 0; duration: Theme.animSlow }
-        ScriptAction { script: root.visible = false }
+        ScriptAction {
+            script: {
+                root.visible = false;
+                RoomState.speaking = false;   // mouth stops once text leaves
+            }
+        }
     }
 
     MouseArea {
