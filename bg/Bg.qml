@@ -79,12 +79,6 @@ PanelWindow {
     }
 
     // click = next girl state
-    // wallpaper crossfade progress
-    property real wallFade: 1
-    Behavior on wallFade {
-        NumberAnimation { duration: 600; easing.type: Easing.InOutQuad }
-    }
-
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
