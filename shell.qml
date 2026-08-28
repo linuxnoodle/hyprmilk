@@ -9,7 +9,6 @@ import "launcher" as L
 import "notifs" as N
 import "osd" as O
 import "music" as M
-import "wm" as Wm
 
 ShellRoot {
 
@@ -75,12 +74,6 @@ ShellRoot {
         model: Quickshell.screens
 
         Bg.Bg {}
-    }
-
-    Variants {
-        model: Quickshell.screens
-
-        Wm.WindowFrames {}
     }
 
     Variants {
