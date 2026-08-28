@@ -65,7 +65,7 @@ PanelWindow {
 
     // shared warp fields (depth-scaled lean + foreshorten)
     readonly property real vNorm: overscanY > 0 ? smoothY / overscanY : 0   // [-0.5..0.5]
-    function layerSquash(d) { return 1 - Math.abs(vNorm) * 0.18 * d }
+    function layerSquash(d) { return 1 - Math.abs(vNorm) * 0.055 * d }
 
     // per-depth offset (depth 1 = room plate reference)
     function layerX(depth) { return smoothX * depth; }
