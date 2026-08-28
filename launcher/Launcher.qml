@@ -11,7 +11,7 @@ PanelWindow {
     property int selectedIndex: 0
     property var results: []
 
-    screen: Quickshell.primaryScreen ?? Quickshell.screens[0]
+    screen: Theme.mainScreen()
     exclusionMode: ExclusionMode.Normal
     aboveWindows: true
     focusable: true

@@ -1,8 +1,19 @@
 pragma Singleton
 
+import Quickshell
 import QtQuick
 
 QtObject {
+    // widest monitor = the "main" screen (launcher, notif center, OSD, girl, dialogue)
+    function mainScreen() {
+        const screens = Quickshell.screens;
+        let best = screens[0];
+        for (let i = 1; i < screens.length; ++i)
+            if (screens[i].width > best.width)
+                best = screens[i];
+        return best;
+    }
+
     readonly property color accent: "#ac3232"
     readonly property color accent2: "#52263e"
     readonly property color bg: "#0d0d14"

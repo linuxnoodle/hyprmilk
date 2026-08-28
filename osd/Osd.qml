@@ -8,7 +8,7 @@ import "../widgets"
 PanelWindow {
     id: root
 
-    screen: Quickshell.primaryScreen ?? Quickshell.screens[0]
+    screen: Theme.mainScreen()
     exclusionMode: ExclusionMode.Ignore
     aboveWindows: true
     focusable: false

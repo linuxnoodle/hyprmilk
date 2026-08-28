@@ -12,7 +12,7 @@ PanelWindow {
     // set from shell.qml
     required property NotificationServer server
 
-    screen: Quickshell.primaryScreen ?? Quickshell.screens[0]
+    screen: Theme.mainScreen()
     exclusionMode: ExclusionMode.Ignore
     aboveWindows: true
     focusable: false
