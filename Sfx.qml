@@ -19,27 +19,30 @@ QtObject {
 
     // ---- talking loop: narr.ogg while a line is on screen ----
     property var _talk: null
-    property string _talkMarker: "hyprmilk-talk"
+    property int _talkSeq: 0
+    property string _talkTok: ""
 
     function speakLoop() {
         if (!enabled || voiceMuted || !focusOk())
             return;
         speakLoopStop();
+        // unique token per spawn: stale kills can't touch the fresh instance
+        _talkTok = "hyprmilk-talk-" + (++_talkSeq);
         _talk = procComp.createObject(root);
         _talk.command = ["mpv", "--no-video", "--really-quiet", "--loop-file=inf",
-                         "--volume=55",
+                         "--volume=55", `--force-media-title=${_talkTok}`,
                          Qt.resolvedUrl("assets/audio/ui/narr.ogg").toString().replace("file://", "")];
         _talk.running = true;
     }
 
     function speakLoopStop() {
-        if (_talk) {
-            // ~0.3s fade-out like the game (kill after delay)
+        // immediate, token-scoped kill: no delayed sleep, no cross-line races
+        if (_talkTok !== "") {
             Quickshell.execDetached(["sh", "-c",
-                "sleep 0.3; pkill -f hyprmilk-talk 2>/dev/null || true"]);
-            Quickshell.execDetached(["sh", "-c", "pkill -f narr.ogg 2>/dev/null || true"]);
-            _talk = null;
+                `pkill -f ${_talkTok} 2>/dev/null || true`]);
+            _talkTok = "";
         }
+        _talk = null;
     }
 
     function sfx(path, volume) {

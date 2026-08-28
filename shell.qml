@@ -48,6 +48,8 @@ ShellRoot {
                 RoomState.wallpaperFocused = (event.data ?? "").trim() === ""
                     || (event.data ?? "").startsWith(",");
                 Sfx.setAmbientFocus(RoomState.wallpaperFocused);
+                if (!RoomState.wallpaperFocused)
+                    Sfx.speakLoopStop();   // mid-line focus loss must silence
                 return;
             }
             const m = Hyprland.focusedMonitor;
