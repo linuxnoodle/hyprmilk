@@ -72,45 +72,11 @@ PanelWindow {
     }
 
     // ---- layers (each wrapped in an Item so offsets don't fight anchors) ----
-    // bottom: skybox (intro-style art; off unless enabled via launcher)
-    Item {
-        z: -2
-        anchors.fill: parent
-        x: bg.shiftX(0.35)
-        y: bg.shiftY(0.35)
-
-        Image {
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectCrop
-            smooth: false
-            visible: RoomState.showSkybox
-            source: RoomState.skyboxIndex > 0
-                ? `../assets/bg/skybox/${RoomState.skyboxIndex}.png` : ""
-        }
-    }
-
-    // mirror reflection overlay over the skybox
-    Item {
-        z: -1
-        anchors.fill: parent
-        x: bg.shiftX(0.5)
-        y: bg.shiftY(0.5)
-
-        Image {
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectCrop
-            smooth: true
-            visible: RoomState.showSkybox
-            source: RoomState.skyboxIndex > 0
-                ? `../assets/bg/mirror/${RoomState.skyboxIndex}.png` : ""
-        }
-    }
-
-    // wallpaper: real game imagery (CGs / sky frames / room art) from
-    // assets/bg/walls/, downscaled by tools. one static image per session,
-    // cycled via the launcher action.
+    // bottom: red-dominant imagery (game CGs / sky frames). shown THROUGH
+    // the transparent windows of the room plate on top. cycled via launcher.
     Image {
         id: wall
+        z: -2
         anchors.fill: parent
         fillMode: Image.PreserveAspectCrop
         smooth: false
@@ -120,6 +86,20 @@ PanelWindow {
         source: RoomState.wallIndex >= 0
             ? `../assets/bg/walls/${RoomState.walls[RoomState.wallIndex]}.png`
             : "../assets/bg/walls/room.png"
+    }
+
+    // top: grey/dark room plate with transparent window cutouts — the red
+    // background layer shows through them (the game's layered look)
+    Image {
+        id: roomPlate
+        z: 0
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        smooth: false
+        layer.enabled: true
+        layer.smooth: false
+        layer.textureSize: Qt.size(width, height)
+        source: "../assets/bg/bg.png"
     }
 
     // Milk-Chan: only on the main (widest) monitor, closest layer

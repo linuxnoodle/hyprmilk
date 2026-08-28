@@ -22,9 +22,7 @@ QtObject {
     readonly property var room: rooms[String(currentWs)] ?? null
     readonly property string roomId: room?.id ?? "hub"
 
-    property int skyboxIndex: 0
     property int plateIndex: 0
-    property bool showSkybox: false   // intro-style skybox art; off by default
     property bool voiceMuted: false
     property bool speaking: false   // dialogue typewriter active -> sprite mouth
 
@@ -37,7 +35,7 @@ QtObject {
 
     signal didChangeRoom(string roomId)
     signal dialogueRequested(var line)
-    signal skyboxChanged(int index)
+    signal wallChanged(int index)
 
     // ----------------------------------------------------------------
     function reseedSprite(pose, emotion) {
@@ -55,29 +53,13 @@ QtObject {
         spriteEpoch++;
     }
 
-    function rerollSkybox() {
-        const range = manifest?.skybox?.default_range ?? [];
-        if (!range.length)
-            return;
-        let next;
-        do {
-            next = range[Math.floor(Math.random() * range.length)];
-        } while (range.length > 1 && next === skyboxIndex);
-        skyboxIndex = next;
-        skyboxChanged(next);
-    }
-
-    // launcher action: cycle the wallpaper image (CGs, sky frames, room art)
+    // launcher action: cycle the wallpaper (red-dominant layer behind the
+    // room plate's transparent windows)
     function cycleWallpaper() {
         if (!walls?.length)
             return;
         wallIndex = (wallIndex + 1) % walls.length;
-    }
-
-    // launcher action: show the skybox layer and pick a new frame
-    function toggleSkybox() {
-        showSkybox = true;
-        rerollSkybox();
+        wallChanged(wallIndex);
     }
 
     function comboList() {
@@ -151,8 +133,7 @@ QtObject {
     }
 
     Component.onCompleted: {
-        // seed one sprite + skybox + wallpaper from data immediately
-        rerollSkybox();
+        // seed a wallpaper image immediately
         if (walls?.length)
             wallIndex = Math.floor(Math.random() * walls.length);
     }

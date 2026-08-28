@@ -30,8 +30,8 @@ Singleton {
             root.playerPopupVisible = !root.playerPopupVisible;
         }
 
-        function rerollSkybox(): void {
-            RoomState.rerollSkybox();
+        function cycleWallpaper(): void {
+            RoomState.cycleWallpaper();
         }
 
         function sayLine(): void {
