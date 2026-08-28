@@ -47,6 +47,7 @@ ShellRoot {
             if (event.name === "activewindow" || event.name === "activewindowv2") {
                 RoomState.wallpaperFocused = (event.data ?? "").trim() === ""
                     || (event.data ?? "").startsWith(",");
+                Sfx.setAmbientFocus(RoomState.wallpaperFocused);
                 return;
             }
             const m = Hyprland.focusedMonitor;
@@ -149,5 +150,6 @@ ShellRoot {
         const r = RoomState.rooms[String(RoomState.currentWs)];
         if (r?.ambient)
             Sfx.ambient(r.ambient);
+        Sfx.setAmbientFocus(RoomState.wallpaperFocused);
     }
 }
