@@ -31,7 +31,7 @@ PanelWindow {
     onVisibleChanged: if (visible)
         anim.start()
 
-    Rectangle {
+    Border {
         id: panel
 
         readonly property real uiScale: 1.15
@@ -42,9 +42,6 @@ PanelWindow {
             bottom: parent.bottom
         }
         width: parent.width
-        color: Theme.bg
-        border.color: Theme.bg3
-        border.width: 1
         opacity: 0
         transform: Translate { id: slide; x: panel.width }
 

@@ -40,8 +40,8 @@ Item {
         }
         wrapMode: Text.WordWrap
         font.family: Theme.fontFamily
-        font.pixelSize: Math.round(16 * root.uiScale)
-        color: line?.speaker === "narr" ? Theme.fg2 : Theme.fg
+        font.pixelSize: Math.round(21 * root.uiScale)
+        color: Theme.accent   // same red as the UI outlines
         text: root.fullText.slice(0, root.shownChars)
         smooth: false
     }

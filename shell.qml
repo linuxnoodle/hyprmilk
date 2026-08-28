@@ -9,15 +9,23 @@ import "launcher" as L
 import "notifs" as N
 import "osd" as O
 import "music" as M
+import "wm" as Wm
 
 ShellRoot {
 
     // the game's own dialogue font (gui.text_font = 122.ttf, "Retro Gaming")
+    // FontLoader registers it app-side; we also install it system-wide in
+    // tools/install.sh so the family name always resolves.
     FontLoader {
         id: gameFont
         source: "assets/fonts/game-122.ttf"
-        onStatusChanged: if (status === FontLoader.Ready)
+        onStatusChanged: if (status === FontLoader.Ready && gameFont.name !== "")
             Theme.gameFontFamily = gameFont.name
+    }
+    // static fallback: never leave text on a default font
+    function ensureFont() {
+        if (Theme.gameFontFamily === "")
+            Theme.gameFontFamily = "Retro Gaming"
     }
 
     // widest monitor = the "main" screen (girl + dialogue live here)
@@ -67,6 +75,12 @@ ShellRoot {
         model: Quickshell.screens
 
         Bg.Bg {}
+    }
+
+    Variants {
+        model: Quickshell.screens
+
+        Wm.WindowFrames {}
     }
 
     Variants {
@@ -132,6 +146,7 @@ ShellRoot {
     }
 
     Component.onCompleted: {
+        ensureFont();
         const r = RoomState.rooms[String(RoomState.currentWs)];
         if (r?.ambient)
             Sfx.ambient(r.ambient);

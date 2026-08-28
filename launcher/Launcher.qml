@@ -73,7 +73,7 @@ PanelWindow {
         selectedIndex = Math.min(selectedIndex, Math.max(out.length - 1, 0));
     }
 
-    Rectangle {
+    Border {
         id: panel
 
         readonly property real uiScale: Math.max(1, Math.min(1.6, root.width / 2560))
@@ -85,10 +85,7 @@ PanelWindow {
         }
         width: Math.min(Math.round(560 * uiScale), root.width * 0.9)
         height: Math.min(Math.round(420 * uiScale), 400)
-        color: Theme.bg
-        border.color: Theme.bg3
-        border.width: 1
-
+        
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 8

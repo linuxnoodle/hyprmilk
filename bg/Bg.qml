@@ -13,6 +13,11 @@ PanelWindow {
     focusable: false
     color: "transparent"
 
+    // bar reserves ~42px; give bg the SAME claim so it fills the full screen
+    // (layer-shell: a surface's own zone sizes it into the reserved strip)
+    exclusiveZone: Math.round(Theme.barExclusive
+        * Math.max(1, Math.min(1.6, width / 2560)))
+
     anchors {
         top: true
         left: true
@@ -27,9 +32,9 @@ PanelWindow {
 
     // subtle idle drift + cursor parallax offsets (px, screen-sized)
     readonly property real parX:
-        (0.5 - cx) * 34 + Math.sin(driftT) * 16
+        (0.5 - cx) * 70 + Math.sin(driftT) * 26
     readonly property real parY:
-        (0.5 - cy) * 20 + Math.cos(driftT * 0.83) * 9
+        (0.5 - cy) * 42 + Math.cos(driftT * 0.83) * 15
 
     Timer {
         interval: 100
@@ -87,11 +92,20 @@ PanelWindow {
         }
     }
 
+    // full-screen red wash: the game's room art is red-on-black with an
+    // opaque backdrop, so the "red background" has to be tinted in front
+    // (uniform, full-screen — scales to every monitor, no rectangles)
+    Rectangle {
+        anchors.fill: parent
+        color: "#b33636"
+        opacity: 0.30
+    }
+
     // room plate: static flat red/black bedroom, drawn slightly oversized so
     // parallax/drift never reveals edges. layer texture = repaint-stable.
     Rectangle {
         anchors.fill: parent
-        color: "#000000"
+        color: "transparent"
         Image {
             anchors.fill: parent
             width: parent.width * 1.08

@@ -54,6 +54,10 @@ cp -r "$G/images/sprites/"*          "$A/sprites/"
 for f in frame.png menu.png main_menu.png; do
     cp "$G/gui/$f" "$A/gui/" 2>/dev/null || true
 done
+# red layering art: NVL narrator veil + overlay lit/unlit regions (behind windows)
+for f in nvl.png overlay.png overlay_invert.png; do
+    cp "$G/images/$f" "$A/gui/" 2>/dev/null || true
+done
 cp -r "$G/gui/bar" "$G/gui/button" "$G/gui/slider" "$G/gui/overlay" "$A/gui/" 2>/dev/null || true
 
 # -- audio: room ambients, radio stations, UI sounds

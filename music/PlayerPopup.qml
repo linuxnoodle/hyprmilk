@@ -25,7 +25,7 @@ PanelWindow {
         item: panel
     }
 
-    Rectangle {
+    Border {
         id: panel
 
         readonly property real uiScale: 1.2
@@ -37,10 +37,7 @@ PanelWindow {
         }
         width: Math.round(420 * uiScale)
         height: Math.round(230 * uiScale)
-        color: Theme.bg
-        border.color: Theme.bg3
-        border.width: 1
-
+        
         ColumnLayout {
             anchors {
                 fill: parent
@@ -188,8 +185,13 @@ PanelWindow {
         width: big ? 48 : 36
         height: width
         color: mouse.containsMouse ? Theme.accent2 : Theme.bg2
-        border.color: Theme.bg3
-        border.width: 1
+
+        Rectangle {
+            anchors.fill: parent
+            color: "transparent"
+            border.color: Theme.bg3
+            border.width: 1
+        }
 
         Text {
             anchors.centerIn: parent

@@ -18,9 +18,9 @@ QtObject {
         gameFontFamily !== "" ? gameFontFamily : "monospace"
     property int fontSize: 14
 
-    readonly property int barHeight: 28
+    readonly property int barHeight: 36
     readonly property int barMargin: 8
-    readonly property int barExclusive: 42
+    readonly property int barExclusive: 56
 
     readonly property int animFast: 150
     readonly property int animMed: 250

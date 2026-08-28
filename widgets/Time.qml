@@ -22,13 +22,17 @@ Rectangle {
 
         property date now: new Date()
         text: {
-            const h = String(now.getHours()).padStart(2, "0");
+            let h = now.getHours();
+            const ampm = h >= 12 ? "PM" : "AM";
+            h = h % 12;
+            if (h === 0)
+                h = 12;
             const m = String(now.getMinutes()).padStart(2, "0");
             if (!showDate)
-                return `${h}:${m}`;
+                return `${h}:${m} ${ampm}`;
             const d = String(now.getDate()).padStart(2, "0");
             const mo = String(now.getMonth() + 1).padStart(2, "0");
-            return `${d}.${mo} ${h}:${m}`;
+            return `${d}.${mo} ${h}:${m} ${ampm}`;
         }
     }
 

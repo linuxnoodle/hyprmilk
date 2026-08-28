@@ -51,7 +51,7 @@ PanelWindow {
         }
     }
 
-    Rectangle {
+    Border {
         id: osd
 
         readonly property real uiScale: 1.15
@@ -64,9 +64,6 @@ PanelWindow {
         width: Math.round(320 * uiScale)
         height: Math.round(52 * uiScale)
         radius: 0
-        color: Theme.bg
-        border.color: Theme.bg3
-        border.width: 1
         opacity: root.shown ? 1 : 0
         visible: root.shown || opacity > 0
 

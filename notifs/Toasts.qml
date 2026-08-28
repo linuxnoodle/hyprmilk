@@ -44,16 +44,13 @@ PanelWindow {
     Component {
         id: toastComp
 
-        Rectangle {
+        Border {
             id: toast
 
             property var notif: null
             property real uiScale: 1.15
 
             height: Math.round(76 * uiScale)
-            color: Theme.bg
-            border.color: Theme.bg3
-            border.width: 1
             opacity: 0
 
             Component.onCompleted: {
