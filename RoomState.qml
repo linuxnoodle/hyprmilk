@@ -28,6 +28,7 @@ QtObject {
     property bool speaking: false   // dialogue typewriter active -> sprite mouth
     property bool dialogueVisible: false   // milk dialogue window present
     property bool girlVisible: true   // Milk-Chan sprite shown
+    property bool wallpaperFocused: true   // no window focused (desktop active)
 
     // sprite reseed trigger (bump to randomize pose/emotion/variant)
     property int spriteEpoch: 0
@@ -68,7 +69,6 @@ QtObject {
             return;
         wallIndex = (wallIndex + 1) % walls.length;
         wallChanged(wallIndex);
-    }
     }
 
     function comboList() {

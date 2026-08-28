@@ -43,6 +43,12 @@ ShellRoot {
         target: Hyprland
 
         function onRawEvent(event) {
+            // wallpaper focus: dialogue sfx only when the desktop is focused
+            if (event.name === "activewindow" || event.name === "activewindowv2") {
+                RoomState.wallpaperFocused = (event.data ?? "").trim() === ""
+                    || (event.data ?? "").startsWith(",");
+                return;
+            }
             const m = Hyprland.focusedMonitor;
             if (!m?.activeWorkspace)
                 return;

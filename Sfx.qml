@@ -8,13 +8,16 @@ import QtQuick
 QtObject {
     id: root
 
-    // master audio switch — mpv-based sfx/ambient/voice. off for now.
-    property bool enabled: false
+    // master audio switch — game sfx/ambient/voice via mpv. on.
+    property bool enabled: true
 
     property bool voiceMuted: false   // mirrors RoomState.voiceMuted
 
+    // dialogue sfx only when the desktop/wallpaper is focused
+    function focusOk() { return RoomState.wallpaperFocused; }
+
     function sfx(path, volume) {
-        if (!enabled || voiceMuted)
+        if (!enabled || voiceMuted || !focusOk())
             return;
         const p = procComp.createObject(root);
         p.command = ["mpv", "--no-video", "--really-quiet",
@@ -24,7 +27,7 @@ QtObject {
     }
 
     function randomNice() {
-        if (!enabled)
+        if (!enabled || !focusOk())
             return;
         const n = 1 + Math.floor(Math.random() * 7);
         sfx(`assets/audio/ui/${n}.ogg`, 60);
@@ -62,7 +65,7 @@ QtObject {
     property var _voice: null
 
     function voice(path) {
-        if (!enabled || voiceMuted)
+        if (!enabled || voiceMuted || !focusOk())
             return;
         if (_voice) {
             Quickshell.execDetached(["sh", "-c",
