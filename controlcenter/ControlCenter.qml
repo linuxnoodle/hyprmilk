@@ -67,13 +67,13 @@ PanelWindow {
         } catch (e) {}
     }
 
+    // single persistent readers (no per-tick object churn)
+    FileView { id: sysFv; blockLoading: true }
+
     function readFile(path) {
         try {
-            const f = Qt.createQmlObject(
-                `import Quickshell.Io; FileView { path: "${path}"; blockLoading: true }`, root);
-            const t = f.text();
-            f.destroy();
-            return t ?? "";
+            sysFv.path = path;
+            return sysFv.text() ?? "";
         } catch (e) { return ""; }
     }
 
@@ -82,9 +82,8 @@ PanelWindow {
     property bool hasBacklight: false
 
     function probeBrightness() {
-        const f = Qt.createQmlObject(
-            `import Quickshell.Io; FileView { path: "/tmp/hyprmilk-bright"; blockLoading: true }`, root);
-        const t = f.text(); f.destroy();
+        sysFv.path = "/tmp/hyprmilk-bright";
+        const t = sysFv.text();
         const m = /brightness,([^ ]+),(\d+),(\d+)/.exec(t ?? "");
         if (m) { root.hasBacklight = true; root.brightPct = Number(m[3]); }
     }

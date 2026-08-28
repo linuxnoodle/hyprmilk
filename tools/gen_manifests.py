@@ -80,12 +80,8 @@ def main():
         "sprites": sprites(),
         "radio": radio(),
     }
-    (ROOT / "data/manifest.json").write_text(
-        json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8"
-    )
     emit_js("manifest", data)
     w = {"walls": walls()}
-    (ROOT / "data/walls.json").write_text(json.dumps(w), encoding="utf-8")
     emit_js("walls", w)
     n_emotions = sum(len(v) for v in data["sprites"].values())
     print(

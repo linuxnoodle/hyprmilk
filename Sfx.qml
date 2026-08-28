@@ -42,7 +42,12 @@ QtObject {
                 `pkill -f ${_talkTok} 2>/dev/null || true`]);
             _talkTok = "";
         }
-        _talk = null;
+        if (_talk) {
+            const proc = _talk;     // free the wrapper object (no per-line leak)
+            _talk = null;
+            proc.running = false;
+            proc.destroy();
+        }
     }
 
     function sfx(path, volume) {
@@ -133,9 +138,12 @@ QtObject {
     function stopAmbient() {
         _fadeCleanup();
         if (_ambient) {
+            const proc = _ambient;
+            _ambient = null;
             Quickshell.execDetached(["sh", "-c",
                 `pkill -f "loop-file=inf.*${_ambientPath.split("/").pop()}" || true`]);
-            _ambient = null;
+            proc.running = false;
+            proc.destroy();
         }
         _ambientPath = "";
         Quickshell.execDetached(["sh", "-c", `rm -f ${_sock()} || true`]);
@@ -147,8 +155,10 @@ QtObject {
         if (!enabled || voiceMuted || !focusOk())
             return;
         if (_voice) {
-            Quickshell.execDetached(["sh", "-c",
-                `pkill -f "${path}" || true`]);
+            const old = _voice;
+            _voice = null;
+            old.running = false;
+            old.destroy();
         }
         _voice = procComp.createObject(root);
         _voice.command = ["mpv", "--no-video", "--really-quiet",

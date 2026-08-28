@@ -178,9 +178,6 @@ def main():
         dialogue[room] = lines
         print(f">> {room:6s}: {len(lines):3d} lines ({translated} translated)")
 
-    out = ROOT / "data" / "dialogue.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(dialogue, ensure_ascii=False, indent=1), encoding="utf-8")
     emit_js("dialogue", dialogue)
 
     # ---------------- rooms.json ----------------
@@ -221,11 +218,8 @@ def main():
             "plates": plates,
             "ambient": ambient,
         }
-    (ROOT / "data" / "rooms.json").write_text(
-        json.dumps(rooms, ensure_ascii=False, indent=1), encoding="utf-8"
-    )
     emit_js("rooms", rooms)
-    print(">> wrote data/dialogue.json + data/rooms.json + .js modules")
+    print(">> wrote data/*.js modules")
 
 
 if __name__ == "__main__":
