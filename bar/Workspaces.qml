@@ -38,27 +38,36 @@ MouseArea {
     // occupancy: hyprctl workspaces -> which ws have windows
     property int _feedSeq: 0
 
-    // unique path per query: FileView won't reload on a re-assigned identical
-    // path, which left occupancy stuck on the boot snapshot
+    // unique path per query
     function _nextPath() { return "/tmp/hyprmilk-ws-" + (++_feedSeq) + ".json"; }
+
+    // read a finished file synchronously (create-per-read: FileView with
+    // blockLoading performs a blocking read at text()) — the file always
+    // exists here (the process already exited), so no read-before-write race
+    function readJson(p) {
+        try {
+            const f = Qt.createQmlObject(
+                `import Quickshell.Io; FileView { path: "${p}"; blockLoading: true }`, root);
+            const t = f.text() ?? "";
+            f.destroy();
+            return JSON.parse(t);
+        } catch (e) { return null; }
+    }
 
     function queryOccupancy() {
         if (_occParser && _occParser.running)
             return;
         const p = root._nextPath();
-        root._fallbackPath = p;          // schedule read for THIS query
         _occParser = procComp.createObject(root);
         _occParser.command = ["sh", "-c",
             `hyprctl workspaces -j > ${p} 2>/dev/null`];
         _occParser.exited.connect(() => {
-            try {
+            const data = root.readJson(p);
+            if (data) {
                 const occ = {};
-                for (const w of JSON.parse(fv.text()))
+                for (const w of data)
                     occ[w.id] = (w.windows ?? 0) > 0;
                 root.occupied = occ;
-                console.log("[ws] occupancy", JSON.stringify(occ));
-            } catch (e) {
-                console.warn("[ws] occupancy parse", String(e).slice(0,80));
             }
             root._occParser = null;
         });
@@ -68,15 +77,6 @@ MouseArea {
     property Component procComp: Component { Process { } }
     property var _parser: null
     property var _occParser: null
-    property string _fallbackPath: ""
-
-    // hyprctl reader
-    FileView {
-        id: fv
-        path: root._fallbackPath
-        blockLoading: true
-    }
-
     onWheel: e => {
         e.accepted = true;
         if (!wsIds.length)
