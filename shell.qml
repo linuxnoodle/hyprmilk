@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Hyprland
 import Quickshell.Services.Notifications
 import QtQuick
@@ -184,8 +185,30 @@ ShellRoot {
         }
     }
 
+    // startup focus sync: rawEvent only fires on CHANGE, so if the shell
+    // boots with a window already focused, wallpaperFocused would stay stuck
+    // on its desktop-focused default until the first focus change
+    Process {
+        id: focusProbe
+        command: ["sh", "-c", "hyprctl activewindow -j 2>/dev/null"]
+        stdout: SplitParser {
+            onRead: data => {
+                let focused = false;
+                try {
+                    const j = JSON.parse(data);
+                    focused = !!j && j.address !== undefined && j.address !== "0x0";
+                } catch (e) { focused = false; }   // "Invalid" when desktop
+                if (focused !== RoomState.wallpaperFocused) {
+                    RoomState.wallpaperFocused = focused;
+                    Sfx.setAmbientFocus(focused);
+                }
+            }
+        }
+    }
+
     Component.onCompleted: {
         ensureFont();
+        focusProbe.running = true;
         const r = RoomState.rooms[String(RoomState.currentWs)];
         if (r?.ambient)
             Sfx.ambient(r.ambient);
