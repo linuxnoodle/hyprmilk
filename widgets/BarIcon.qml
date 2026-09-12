@@ -57,6 +57,28 @@ Canvas {
                 ctx.arc(9, 8, 6.5, -Math.PI / 3, Math.PI / 3);
                 ctx.stroke();
             }
+        } else if (kind === "bubble") {
+            // speech bubble (Milk-chan voice toggle) — sharp pixel corners;
+            // muted = outline only + slash, unmuted = filled
+            ctx.beginPath();
+            ctx.moveTo(2, 3);
+            ctx.lineTo(14, 3);
+            ctx.lineTo(14, 10);
+            ctx.lineTo(7, 10);
+            ctx.lineTo(4, 13);
+            ctx.lineTo(4, 10);
+            ctx.lineTo(2, 10);
+            ctx.closePath();
+            if (muted)
+                ctx.stroke();
+            else
+                ctx.fill();
+            if (muted) {
+                ctx.beginPath();
+                ctx.moveTo(2.5, 12.5);
+                ctx.lineTo(13.5, 1.5);
+                ctx.stroke();
+            }
         } else if (kind === "bell") {
             // dome with flared lip
             ctx.beginPath();

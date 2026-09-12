@@ -222,7 +222,7 @@ PanelWindow {
 
                     BarIcon {
                         id: voiceIcon
-                        kind: "speaker"
+                        kind: "bubble"   // Milk-chan dialogue voice, not sink volume
                         active: !RoomState.voiceMuted
                         muted: RoomState.voiceMuted
                     }
