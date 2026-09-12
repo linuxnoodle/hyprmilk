@@ -2,3 +2,6 @@ assets/
 # dev / generated
 screenshots/
 __pycache__/
+
+hyprmilk-game-assets.tar.gz
+hyprmilk-portable.tar.gz
