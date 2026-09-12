@@ -189,6 +189,10 @@ PanelWindow {
                     }
                 }
 
+                Battery {
+                    size: Math.round(12 * root.uiScale)
+                }
+
                 Item {
                     width: voiceIcon.width
                     height: voiceIcon.height
