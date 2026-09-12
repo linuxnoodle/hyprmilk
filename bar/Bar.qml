@@ -162,17 +162,40 @@ PanelWindow {
                     smooth: false
                 }
 
-                Text {
-                    function volPct() {
-                        return `${Math.round((root.sink?.volume ?? 0) * 100)}%`;
+                // sink volume: state icon + percent to its right; click =
+                // mute toggle, wheel = volume
+                Item {
+                    id: volGroup
+                    implicitWidth: volIcon.width + volText.implicitWidth
+                        + Math.round(5 * root.uiScale)
+                    implicitHeight: Math.max(volIcon.height, volText.implicitHeight)
+
+                    BarIcon {
+                        id: volIcon
+                        anchors.verticalCenter: parent.verticalCenter
+                        kind: "speaker"
+                        active: !(root.sink?.muted ?? false)
+                        muted: root.sink?.muted ?? false
                     }
-                    text: root.sink?.muted ? `VOL--` : volPct()
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Math.round(12 * root.uiScale)
-                    color: Theme.fg
+
+                    Text {
+                        id: volText
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: volIcon.right
+                        anchors.leftMargin: Math.round(5 * root.uiScale)
+                        function volPct() {
+                            return `${Math.round((root.sink?.volume ?? 0) * 100)}%`;
+                        }
+                        text: root.sink?.muted ? `--` : volPct()
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Math.round(12 * root.uiScale)
+                        color: root.sink?.muted ? Theme.fg2 : Theme.fg
+                        smooth: false
+                    }
 
                     MouseArea {
                         anchors.fill: parent
+                        anchors.margins: -4
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             if (root.sink)

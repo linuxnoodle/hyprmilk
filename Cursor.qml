@@ -23,12 +23,17 @@ Singleton {
     Process {
         running: Cursor.active
         command: ["python3", "-u", "-c",
-            "import socket, os, time\n" +
+            "import socket, os, sys, time\n" +
             "sig = os.environ.get('HYPRLAND_INSTANCE_SIGNATURE', '')\n" +
             "path = f'/run/user/{os.getuid()}/hypr/{sig}/.socket.sock'\n" +
+            "ppid = os.getppid()\n" +
             "last = ''\n" +
             "idle = 0\n" +
             "while True:\n" +
+            "    # if our qs parent died, we would be reparented — exit so a\n" +
+            "    # stale poller can never outlive the shell that spawned it\n" +
+            "    if os.getppid() != ppid:\n" +
+            "        sys.exit(0)\n" +
             "    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n" +
             "    try:\n" +
             "        s.connect(path)\n" +

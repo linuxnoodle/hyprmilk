@@ -44,18 +44,22 @@ ShellRoot {
         target: Hyprland
 
         function onRawEvent(event) {
-            const focusEvents = ["activewindow", "activewindowv2", "workspace",
-                                 "focusedmon", "movewindow", "openwindow",
-                                 "closewindow", "changefloatingmode"];
-
-            // background mode: a window is focused <=> activeToplevel exists.
-            // moving to an EMPTY workspace fires no activewindow event, so
-            // derive focus from the toplevel itself on every relevant event.
-            if (focusEvents.includes(event.name)) {
-                const focused = Hyprland.activeToplevel !== null;
-                if (focused !== RoomState.wallpaperFocused) {
-                    RoomState.wallpaperFocused = focused;
-                    Sfx.setAmbientFocus(focused);
+            // background mode: wallpaper is focused <=> no window has focus.
+            // NOTE: Hyprland.activeToplevel never resolves on this combo
+            // (Quickshell 0.3.1 + 0.56 lua build), so derive focus from the
+            // raw activewindow payload instead: "class,title" with a
+            // focused window, "," (or empty) when only the desktop has
+            // focus. Hyprland fires activewindow on every focus change,
+            // including switching to an empty workspace.
+            if (event.name === "activewindow") {
+                const data = (event.data ?? "").replace(/,/g, "").trim();
+                const focused = data.length > 0;   // a WINDOW has focus
+                // wallpaperFocused = desktop focused = NOT window-focused
+                // (the original code assigned this inverted — parallax ran
+                // exactly when it should have been frozen)
+                if (focused === RoomState.wallpaperFocused) {
+                    RoomState.wallpaperFocused = !focused;
+                    Sfx.setAmbientFocus(!focused);
                 }
             }
 
