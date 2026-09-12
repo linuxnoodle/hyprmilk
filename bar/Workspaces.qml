@@ -30,8 +30,11 @@ MouseArea {
     function refresh() {
         const name = monitor?.name ?? "";
         const stat = Binds.wsbindings[name];
-        if (stat && stat.length)
-            root.wsIds = stat.slice();   // static binding map (incl. empty ws)
+        if (stat && stat.length) {
+            const next = stat.join(",");
+            if (next !== root.wsIds.join(","))
+                root.wsIds = stat.slice();   // static map: ALL binded ws, incl. empty
+        }
         queryOccupancy();
     }
 
@@ -68,15 +71,18 @@ MouseArea {
                 for (const w of data)
                     occ[w.id] = (w.windows ?? 0) > 0;
                 root.occupied = occ;
-                // no static binding for this monitor (gen_bindings found no
-                // rules): fall back to the live workspace list, filtered to
-                // THIS monitor — the raw list spans every display
+                // no static binding for this monitor: track the live list
+                // (per-monitor) so chips appear/disappear as workspaces come
+                // and go instead of freezing at whatever existed at startup
                 const stat = Binds.wsbindings[monitor?.name ?? ""];
-                if ((!root.wsIds.length) && !(stat && stat.length))
-                    root.wsIds = data
+                if (!(stat && stat.length)) {
+                    const live = data
                         .filter(w => (w.monitor ?? "") === (monitor?.name ?? ""))
                         .map(w => w.id)
                         .filter(id => id > 0).sort((a, b) => a - b);
+                    if (live.join(",") !== root.wsIds.join(","))
+                        root.wsIds = live;
+                }
             }
             root._occParser = null;
         });
@@ -100,7 +106,7 @@ MouseArea {
         target: Hyprland
 
         function onRawEvent(event) {
-            const names = ["workspace", "moveworkspace", "createworkspace",
+            const names = ["workspace", "workspacev2", "moveworkspace", "createworkspace",
                            "destroyworkspace", "movewindow", "openwindow",
                            "closewindow"];
             if (names.includes(event.name))
