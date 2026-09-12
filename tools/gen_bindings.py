@@ -19,17 +19,51 @@ RULE = re.compile(
     re.S,
 )
 
+# lua numeric for-loop wrapping workspace rules:
+#   for i = 1, 10 do hl.workspace_rule({ workspace = tostring(i), ... }) end
+LOOP = re.compile(
+    r'for\s+(?P<var>\w+)\s*=\s*(?P<lo>\d+)\s*,\s*(?P<hi>\d+)\s+do(?P<body>.*?)\nend',
+    re.S,
+)
+MON = re.compile(r'monitor\s*=\s*"([A-Za-z0-9_-]+)"')
+WS = re.compile(r'workspace\s*=\s*"(\d+)"')
+
+
+def _collect(body: str, var: str | None, lo: int, hi: int, bind: dict) -> None:
+    """Scan lua source for workspace_rule blocks; expand loop vars."""
+    for m in RULE.finditer(body):
+        b = m.group("body")
+        mon = MON.search(b)
+        if not mon:
+            continue
+        if var and re.search(rf'workspace\s*=\s*tostring\(\s*{re.escape(var)}\s*\)', b):
+            bind.setdefault(mon.group(1), set()).update(range(lo, hi + 1))
+            continue
+        ws = WS.search(b)
+        if ws:
+            bind.setdefault(mon.group(1), set()).add(int(ws.group(1)))
+
 
 def parse() -> dict:
-    bind = {}
+    bind: dict[str, set] = {}
     if not LUA.exists():
         return bind
-    for m in RULE.finditer(LUA.read_text(errors="replace")):
-        body = m.group("body")
-        ws = re.search(r'workspace\s*=\s*"(\d+)"', body)
-        mon = re.search(r'monitor\s*=\s*"([A-Za-z0-9_-]+)"', body)
-        if ws and mon:
-            bind.setdefault(mon.group(1), set()).add(int(ws.group(1)))
+    text = LUA.read_text(errors="replace")
+
+    loop_spans = []
+    for m in LOOP.finditer(text):
+        _collect(m.group("body"), m.group("var"),
+                 int(m.group("lo")), int(m.group("hi")), bind)
+        loop_spans.append(m.span())
+
+    def in_loop(pos: int) -> bool:
+        return any(s <= pos < e for s, e in loop_spans)
+
+    for m in RULE.finditer(text):
+        if in_loop(m.start()):
+            continue   # already handled by loop expansion
+        _collect(m.group("body"), None, 0, 0, bind)
+
     return {k: sorted(v) for k, v in bind.items()}
 
 
