@@ -69,10 +69,13 @@ MouseArea {
                     occ[w.id] = (w.windows ?? 0) > 0;
                 root.occupied = occ;
                 // no static binding for this monitor (gen_bindings found no
-                // rules): fall back to the live workspace list so chips exist
+                // rules): fall back to the live workspace list, filtered to
+                // THIS monitor — the raw list spans every display
                 const stat = Binds.wsbindings[monitor?.name ?? ""];
                 if ((!root.wsIds.length) && !(stat && stat.length))
-                    root.wsIds = data.map(w => w.id)
+                    root.wsIds = data
+                        .filter(w => (w.monitor ?? "") === (monitor?.name ?? ""))
+                        .map(w => w.id)
                         .filter(id => id > 0).sort((a, b) => a - b);
             }
             root._occParser = null;

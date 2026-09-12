@@ -25,8 +25,8 @@ LOOP = re.compile(
     r'for\s+(?P<var>\w+)\s*=\s*(?P<lo>\d+)\s*,\s*(?P<hi>\d+)\s+do(?P<body>.*?)\nend',
     re.S,
 )
-MON = re.compile(r'monitor\s*=\s*"([A-Za-z0-9_-]+)"')
-WS = re.compile(r'workspace\s*=\s*"(\d+)"')
+MON = re.compile(r"monitor\s*=\s*['\"]([A-Za-z0-9_-]+)['\"]")
+WS = re.compile(r"workspace\s*=\s*['\"](\d+)['\"]")
 
 
 def _collect(body: str, var: str | None, lo: int, hi: int, bind: dict) -> None:
@@ -49,6 +49,9 @@ def parse() -> dict:
     if not LUA.exists():
         return bind
     text = LUA.read_text(errors="replace")
+    # strip comments first — commented-out rules must not inject entries
+    text = re.sub(r"--\[\[.*?\]\]", "", text, flags=re.S)
+    text = re.sub(r"--[^\n]*", "", text)
 
     loop_spans = []
     for m in LOOP.finditer(text):
@@ -62,7 +65,9 @@ def parse() -> dict:
     for m in RULE.finditer(text):
         if in_loop(m.start()):
             continue   # already handled by loop expansion
-        _collect(m.group("body"), None, 0, 0, bind)
+        # NOTE: pass the FULL match — _collect re-runs RULE on it, and
+        # m.group("body") is only the {..} interior (no rule prefix)
+        _collect(m.group(0), None, 0, 0, bind)
 
     return {k: sorted(v) for k, v in bind.items()}
 
@@ -72,7 +77,11 @@ def main():
     (ROOT / "data/wsbindings.js").write_text(
         f"var wsbindings = " + json.dumps(bind) + ";\n", encoding="utf-8"
     )
-    print(">> wsbindings:", bind)
+    if not bind:
+        print(">> wsbindings: {} (no workspace rules matched — bar falls back to "
+              "per-monitor live list; check hl.workspace_rule syntax)")
+    else:
+        print(">> wsbindings:", bind)
 
 
 if __name__ == "__main__":
