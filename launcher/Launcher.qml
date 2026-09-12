@@ -138,6 +138,13 @@ PanelWindow {
                 model: root.results.length
                 spacing: 2
 
+                // scroll to keep the keyboard selection in view
+                onSelectedIndexChanged: {
+                    if (root.selectedIndex >= 0)
+                        list.positionViewAtIndex(root.selectedIndex,
+                            ListView.Contain);
+                }
+
                 delegate: Rectangle {
                     required property int index
                     readonly property var item: root.results[index] ?? null
