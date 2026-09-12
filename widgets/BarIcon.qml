@@ -7,9 +7,10 @@ import ".."
 Canvas {
     id: root
 
-    property string kind: "speaker"   // "speaker" | "bell"
+    property string kind: "speaker"   // "speaker" | "bubble" | "battery" | "bell"
     property bool active: false
-    property bool muted: false        // speaker only: waves out, slash in
+    property bool muted: false        // speaker/bubble: slash state
+    property real level: -1           // battery: charge fill 0..1 (<0 = n/a)
 
     width: 16
     height: 16
@@ -18,6 +19,7 @@ Canvas {
     onActiveChanged: requestPaint()
     onMutedChanged: requestPaint()
     onKindChanged: requestPaint()
+    onLevelChanged: requestPaint()
     onWidthChanged: requestPaint()
 
     onPaint: {
@@ -79,6 +81,15 @@ Canvas {
                 ctx.lineTo(13.5, 1.5);
                 ctx.stroke();
             }
+        } else if (kind === "battery") {
+            // body outline + terminal nub + charge fill by `level` (0..1)
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(2, 5, 11, 6);
+            ctx.fillStyle = red;
+            ctx.fillRect(13.5, 7, 2, 2);
+            const lvl = Math.max(0, Math.min(1, root.level));
+            if (lvl > 0.02)
+                ctx.fillRect(3.5, 6.5, 8 * lvl, 3);
         } else if (kind === "bell") {
             // dome with flared lip
             ctx.beginPath();

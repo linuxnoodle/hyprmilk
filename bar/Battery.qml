@@ -1,11 +1,12 @@
 import QtQuick
 import Quickshell.Services.UPower
 import ".."
+import "../widgets"
 
-// battery readout — "NN%" normally, time remaining on hover (Time.qml
-// pattern: text swaps while hovered, segment width eases between sizes).
-// low battery (< 15%) shifts to the brighter alarm red used for capslock
-// in the hyprlock theme.
+// battery readout — charge icon (fill = level) + "NN%", time remaining on
+// hover (Time.qml pattern: text swaps while hovered, segment width eases
+// between sizes). low battery (< 15%) shifts to the brighter alarm red
+// used for capslock in the hyprlock theme.
 Rectangle {
     id: root
 
@@ -25,22 +26,22 @@ Rectangle {
     visible: (dev?.percentage ?? 0) > 0
 
     color: "transparent"
-    implicitWidth: label.implicitWidth
-    implicitHeight: label.implicitHeight
+    implicitWidth: batIcon.width + label.implicitWidth + 5
+    implicitHeight: Math.max(batIcon.height, label.implicitHeight)
 
-    function fmtTime(s) {
-        if (s <= 0)
-            return "--:--";
-        const h = Math.floor(s / 3600);
-        const m = Math.round((s % 3600) / 60);
-        if (h > 0)
-            return `${h}:${String(m).padStart(2, "0")}`;
-        return `${m}m`;
+    BarIcon {
+        id: batIcon
+        anchors.verticalCenter: parent.verticalCenter
+        kind: "battery"
+        active: !root.low
+        level: (root.dev?.percentage ?? 0) / 100
     }
 
     Text {
         id: label
-        anchors.centerIn: parent
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.left: batIcon.right
+        anchors.leftMargin: 5
         font.family: Theme.fontFamily
         font.pixelSize: root.size
         color: root.low ? "#e23c3c" : Theme.fg
@@ -66,6 +67,16 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
         onEntered: root.hovered = true
         onExited: root.hovered = false
+    }
+
+    function fmtTime(s) {
+        if (s <= 0)
+            return "--:--";
+        const h = Math.floor(s / 3600);
+        const m = Math.round((s % 3600) / 60);
+        if (h > 0)
+            return `${h}:${String(m).padStart(2, "0")}`;
+        return `${m}m`;
     }
 
     Behavior on implicitWidth {
