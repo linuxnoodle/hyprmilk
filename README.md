@@ -91,6 +91,10 @@ matching hyprlock theme.
 
 Then relog, or start `qs -c hyprmilk -n` by hand.
 
+Portable: `tools/pack.sh` writes `hyprmilk-portable.tar.gz`, a self-contained
+bundle with the ripped assets included. Unpack it on another machine, run
+`tools/install.sh` from inside, and the theme comes up without the game.
+
 ## Notes
 
 Game audio routes through mpv. The talking loop and click sounds are on by
