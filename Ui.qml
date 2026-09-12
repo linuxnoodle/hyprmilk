@@ -43,6 +43,10 @@ Singleton {
             RoomState.toggleGirl();
         }
 
+        function toggleAutoTalk(): void {
+            RoomState.toggleAutoTalk();
+        }
+
         function nextState(): void {
             RoomState.nextState();
         }

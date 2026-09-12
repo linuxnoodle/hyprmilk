@@ -38,6 +38,9 @@ already have a custom one.
 | `SUPER+W` | Cycle the background layer (sky frames / CGs behind the room windows) |
 | `SUPER+G` | Toggle Milk-Chan |
 | `SUPER+X` | Show a dialogue line |
+| `SUPER+Q` | Control center (volume/brightness sliders, power, calendar) |
+| `SUPER+N` | Notification center |
+| `SUPER+G` | Toggle Milk-Chan |
 | `SUPER+T` `SUPER+E` etc. | your existing binds, untouched |
 
 ## What it does
@@ -45,6 +48,9 @@ already have a custom one.
 - **Layered wallpaper**: the red-dominant game imagery (CGs / sky frames)
   shows through the transparent windows of the room plate (`bg.png`) —
   cycle with `SUPER+W`.
+- **Background mode**: focus a window and the wallpaper freezes (parallax
+  holds, breathing/blinks pause, ambience silent); focus the desktop again
+  and everything eases back in.
 - **Milk-Chan**: animated sprite rig (blinks, talks while text is on screen,
   pose/emotion cycle on idle; click the wallpaper to change her).
 - **Dialogue**: game lines, typewriter reveal, Retro Gaming font in milk red;

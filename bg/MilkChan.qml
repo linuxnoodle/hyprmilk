@@ -17,6 +17,10 @@ Item {
     property int variant: RoomState.spriteVariant
     property bool speaking: false
     property real scale: 0.5
+    // when false: unload all sprite textures + stop blink/talk timers.
+    // Bg binds this to (girlVisible && main monitor) so hidden or secondary
+    // monitors hold zero decoded frames.
+    property bool live: true
 
     // ---- parametrized source helpers (also used by the ghost) ----
     function wrap(p, e, v) {
@@ -87,34 +91,35 @@ Item {
         anchors.fill: parent
         fillMode: Image.PreserveAspectFit
         smooth: false
-        cache: false
-        source: root.bodySrc(root.pose, root.emotion, root.variant)
+        cache: true
+        source: root.live ? root.bodySrc(root.pose, root.emotion, root.variant) : ""
     }
     Image {
         id: eyes
         anchors.fill: parent
         fillMode: Image.PreserveAspectFit
         smooth: false
-        cache: false
+        cache: true
         property string phase: "open"
-        visible: root.eyesOpenSrc(root.pose, root.emotion, root.variant) !== ""
-        source: root.eyesPhaseSrc(root.pose, root.emotion, root.variant, phase)
+        visible: root.live && root.eyesOpenSrc(root.pose, root.emotion, root.variant) !== ""
+        source: root.live ? root.eyesPhaseSrc(root.pose, root.emotion, root.variant, phase) : ""
     }
     Image {
         id: mouth
         anchors.fill: parent
         fillMode: Image.PreserveAspectFit
         smooth: false
-        cache: false
+        cache: true
         property string phase: "closed"
-        source: root.mouthSrc(root.pose, root.emotion, phase)
+        source: root.live ? root.mouthSrc(root.pose, root.emotion, phase) : ""
     }
 
     // ---- blink loop ----
     Timer {
         id: blinkHold
         interval: 2000 + Math.random() * 4000
-        running: root.eyesOpenSrc(root.pose, root.emotion, root.variant) !== ""
+        running: root.live && root.visible
+                && root.eyesOpenSrc(root.pose, root.emotion, root.variant) !== ""
                 && RoomState.wallpaperFocused   // frozen in background mode
         onTriggered: {
             eyes.phase = "half";
@@ -137,7 +142,7 @@ Item {
     Timer {
         id: talk
         interval: 100
-        repeat: root.speaking && RoomState.wallpaperFocused
+        repeat: root.live && root.speaking && RoomState.wallpaperFocused
                 && root.mouthSrc(root.pose, root.emotion, "half") !== ""
                 && root.mouthSrc(root.pose, root.emotion, "full") !== ""
         running: repeat

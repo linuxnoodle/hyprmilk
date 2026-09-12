@@ -48,16 +48,25 @@ PanelWindow {
             (Cursor.gy - (modelData.y ?? 0)) / (modelData.height || 1)));
     }
 
+    // "active display" = monitor currently under the cursor. full parallax
+    // (X + Y) runs ONLY here; other monitors spring back to center and hold
+    // static so their wallpapers never drift.
+    readonly property bool activeDisplay: Cursor.ready && modelData != null
+        && Cursor.gx >= (modelData.x ?? 0)
+        && Cursor.gx < (modelData.x ?? 0) + (modelData.width || 1)
+        && Cursor.gy >= (modelData.y ?? 0)
+        && Cursor.gy < (modelData.y ?? 0) + (modelData.height || 1)
+
     // content moves OPPOSITE the cursor; nearer layers (higher depth) more.
     // background mode: when a window is focused the target freezes at its
     // last value (parallax + idle animation hold still until focus returns)
     property real _frozenX: 0
     property real _frozenY: 0
 
-    readonly property real targetX: par
+    readonly property real targetX: par && activeDisplay
         ? (RoomState.wallpaperFocused ? (cursorNormX - 0.5) * -overscanX : _frozenX)
         : 0
-    readonly property real targetY: par
+    readonly property real targetY: par && activeDisplay
         ? (RoomState.wallpaperFocused ? (cursorNormY - 0.5) * -overscanY : _frozenY)
         : 0
 
@@ -92,11 +101,13 @@ PanelWindow {
     function layerY(depth) { return smoothY * depth; }
 
     Timer {
-        interval: 64
-        running: true
+        // breathing pauses while a window is focused (background mode) and is
+        // fully off when the girl is hidden — keeps the scene static so the
+        // scenegraph stops repainting and GPU/CPU idle at ~zero
+        interval: 100
+        running: RoomState.girlVisible && RoomState.wallpaperFocused && bg.visible
         repeat: true
-        // breathing pauses while a window is focused (background mode)
-        onTriggered: if (RoomState.wallpaperFocused) bg.breathPhase += 0.045
+        onTriggered: bg.breathPhase += 0.07   // 0.70 rad/s, same speed as before
     }
 
     // click = next girl state
@@ -154,7 +165,12 @@ PanelWindow {
         Timer {
             id: wallFadeReset
             interval: 720
-            onTriggered: wallOld.z = 0
+            onTriggered: {
+                wallOld.z = 0;
+                // drop the old frame's texture (~18MB full-screen RGBA per
+                // monitor) once the crossfade is done
+                wallOld.source = "";
+            }
         }
     }
 
@@ -185,6 +201,7 @@ PanelWindow {
         readonly property var main: bg.mainScreen()
         visible: (modelData?.width === main?.width) && main != null
                 && RoomState.girlVisible
+        live: visible
 
         // planted at the bottom edge; horizontal-only parallax so she never
         // detaches from or clips past the bottom

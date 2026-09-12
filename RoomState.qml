@@ -26,7 +26,8 @@ QtObject {
     property bool voiceMuted: false
     property bool speaking: false   // dialogue typewriter active -> sprite mouth
     property bool dialogueVisible: false   // milk dialogue window present
-    property bool girlVisible: true   // Milk-Chan sprite shown
+    property bool girlVisible: false   // Milk-Chan sprite hidden by default (toggleGirl to show)
+    property bool autoTalk: false   // periodic idle dialogue off by default (IPC/launcher still manual)
     property bool wallpaperFocused: true   // no window focused (desktop active)
 
     // sprite reseed trigger (bump to randomize pose/emotion/variant)
@@ -71,6 +72,11 @@ QtObject {
     // launcher/IPC action: toggle Milk-Chan visibility
     function toggleGirl() {
         girlVisible = !girlVisible;
+    }
+
+    // launcher/IPC action: toggle periodic idle dialogue
+    function toggleAutoTalk() {
+        autoTalk = !autoTalk;
     }
 
     // launcher action: cycle the wallpaper (red-dominant layer behind the

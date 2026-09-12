@@ -14,7 +14,11 @@ Singleton {
     property real gy: -1
     readonly property bool ready: gx >= 0
 
-    readonly property bool active: Theme.parallaxEnabled
+    // poller only needed while the wallpaper can actually be seen AND parallax
+    // is live — a focused window freezes parallax anyway, so kill the python
+    // client (~10MB RSS + 10 wakeups/s) whenever one has focus. gx/gy keep
+    // their last values while stopped, matching the parallax freeze design.
+    readonly property bool active: Theme.parallaxEnabled && RoomState.wallpaperFocused
 
     Process {
         running: Cursor.active

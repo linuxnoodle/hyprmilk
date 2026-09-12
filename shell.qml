@@ -44,23 +44,30 @@ ShellRoot {
         target: Hyprland
 
         function onRawEvent(event) {
-            // wallpaper focus: dialogue sfx only when the desktop is focused
-            if (event.name === "activewindow" || event.name === "activewindowv2") {
-                RoomState.wallpaperFocused = (event.data ?? "").trim() === ""
-                    || (event.data ?? "").startsWith(",");
-                Sfx.setAmbientFocus(RoomState.wallpaperFocused);
-                return;
+            const focusEvents = ["activewindow", "activewindowv2", "workspace",
+                                 "focusedmon", "movewindow", "openwindow",
+                                 "closewindow", "changefloatingmode"];
+
+            // background mode: a window is focused <=> activeToplevel exists.
+            // moving to an EMPTY workspace fires no activewindow event, so
+            // derive focus from the toplevel itself on every relevant event.
+            if (focusEvents.includes(event.name)) {
+                const focused = Hyprland.activeToplevel !== null;
+                if (focused !== RoomState.wallpaperFocused) {
+                    RoomState.wallpaperFocused = focused;
+                    Sfx.setAmbientFocus(focused);
+                }
             }
-            const m = Hyprland.focusedMonitor;
-            if (!m?.activeWorkspace)
-                return;
-            const ws = m.activeWorkspace.id;
+
             if (event.name === "workspace") {
-                RoomState.currentWs = ws;
+                const m = Hyprland.focusedMonitor;
+                if (m?.activeWorkspace)
+                    RoomState.currentWs = m.activeWorkspace.id;
                 // no auto-intro on every ws switch (text is periodic / on demand)
             } else if (event.name === "focusedmon") {
-                if (ws !== RoomState.currentWs)
-                    RoomState.currentWs = ws;
+                const m = Hyprland.focusedMonitor;
+                if (m?.activeWorkspace && m.activeWorkspace.id !== RoomState.currentWs)
+                    RoomState.currentWs = m.activeWorkspace.id;
             }
         }
     }
@@ -139,10 +146,11 @@ ShellRoot {
     Cc.ControlCenter {}
 
     // periodic dialogue — a line every few minutes, on its own
+    // (opt-in via RoomState.autoTalk; off by default)
     Timer {
         id: periodicDialogue
         interval: 240000   // 4 min
-        running: true
+        running: RoomState.autoTalk
         repeat: true
         onTriggered: if (RoomState.wallpaperFocused) RoomState.sayRandom()
     }
@@ -152,7 +160,7 @@ ShellRoot {
     Timer {
         id: idleMood
         interval: 45000 + Math.random() * 105000
-        running: true
+        running: RoomState.girlVisible   // no point rolling moods for a hidden girl
         repeat: true
         onTriggered: {
             if (RoomState.wallpaperFocused
