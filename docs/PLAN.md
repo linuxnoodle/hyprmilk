@@ -1,5 +1,3 @@
-# hyprmilk design notes
-
 These are the working notes from building the shell, kept around because the
 reasons behind a few odd choices aren't obvious from the code. The short
 version of the story: the shell started as a flat wallpaper with a girl on it,
