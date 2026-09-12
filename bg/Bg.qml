@@ -73,12 +73,14 @@ PanelWindow {
     property real smoothX: targetX
     property real smoothY: targetY
 
-    // momentum: underdamped spring = overshoot & settle when sweeping
+    // momentum: underdamped spring = overshoot & settle when sweeping.
+    // epsilon 0.05: settle tail cut ~5x vs 0.01 — fewer render frames after
+    // motion is visually done (battery); difference imperceptible.
     Behavior on smoothX {
-        SpringAnimation { spring: 6.0; damping: 0.35; mass: 1.0; epsilon: 0.01 }
+        SpringAnimation { spring: 6.0; damping: 0.35; mass: 1.0; epsilon: 0.05 }
     }
     Behavior on smoothY {
-        SpringAnimation { spring: 6.0; damping: 0.35; mass: 1.0; epsilon: 0.01 }
+        SpringAnimation { spring: 6.0; damping: 0.35; mass: 1.0; epsilon: 0.05 }
     }
 
     // shared warp fields (depth-scaled lean + foreshorten)
@@ -207,8 +209,9 @@ PanelWindow {
         // detaches from or clips past the bottom
         scale: Math.min(1.05, parent.height / 1027 * 0.78)
         speaking: RoomState.speaking
-        layer.enabled: true
-        layer.smooth: false
+        // no layer.enabled framebuffer here: no effects are applied to the
+        // sprite, and an enabled layer forces a full offscreen render pass
+        // per animation frame (battery)
         anchors {
             bottom: parent.bottom
             right: parent.right
