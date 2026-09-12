@@ -56,16 +56,23 @@ QtObject {
         spriteEpoch++;
     }
 
-    // hyprctl on this machine is a hyprlua shim that mangles bare dispatch
-    // strings; use the raw hyprland socket instead (verified working).
+    // Hyprland 0.56 lua config mangles classic socket dispatches: the raw
+    // string is wrapped into hl.dispatch(<payload>) and evaluated as lua, so
+    // `dispatch workspace 2` becomes hl.dispatch(workspace 2) → syntax error.
+    // Payloads must be lua expressions (hl.dsp.*) with BARE numbers — string
+    // args like workspace = "2" return ok but silently do nothing.
     function dispatch(cmd) {
+        const m = /^workspace (-?\d+)$/.exec(cmd);
+        const payload = m
+            ? `hl.dsp.focus({ workspace = ${m[1]} })`
+            : cmd;   // non-workspace cmds: pass through untouched
         Quickshell.execDetached(["python3", "-c",
             "import socket, os\n" +
             "sig = os.environ.get('HYPRLAND_INSTANCE_SIGNATURE', '')\n" +
             "p = f'/run/user/{os.getuid()}/hypr/{sig}/.socket.sock'\n" +
             "s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n" +
             "s.connect(p)\n" +
-            "s.sendall('dispatch " + cmd + "'.encode())\n" +
+            "s.sendall('dispatch " + payload + "'.encode())\n" +
             "s.close()"]);
     }
 

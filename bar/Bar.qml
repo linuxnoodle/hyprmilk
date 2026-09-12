@@ -189,11 +189,16 @@ PanelWindow {
                     }
                 }
 
-                Text {
-                    text: RoomState.voiceMuted ? "🔇" : "🔊"
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Math.round(12 * root.uiScale)
-                    color: RoomState.voiceMuted ? Theme.fg2 : Theme.fg
+                Item {
+                    width: voiceIcon.width
+                    height: voiceIcon.height
+
+                    BarIcon {
+                        id: voiceIcon
+                        kind: "speaker"
+                        active: !RoomState.voiceMuted
+                        muted: RoomState.voiceMuted
+                    }
 
                     MouseArea {
                         anchors.fill: parent
@@ -202,11 +207,15 @@ PanelWindow {
                     }
                 }
 
-                Text {
-                    text: "🔔"
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Math.round(12 * root.uiScale)
-                    color: Ui.notifCenterVisible ? Theme.fg : Theme.fg2
+                Item {
+                    width: bellIcon.width
+                    height: bellIcon.height
+
+                    BarIcon {
+                        id: bellIcon
+                        kind: "bell"
+                        active: Ui.notifCenterVisible
+                    }
 
                     MouseArea {
                         anchors.fill: parent
