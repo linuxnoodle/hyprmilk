@@ -39,31 +39,138 @@ ShellRoot {
         return best;
     }
 
+    // background-mode focus + cursor source: ONE python helper. Listens to
+    // socket2, re-queries ground truth (j/activewindow) on relevant events,
+    // streams "F 1/0" focus transitions and "C x,y" cursor samples (only
+    // while wallpaper-focused — cursor polling idles when a window has
+    // focus). Replaces both the old Cursor poller process and Quickshell's
+    // Hyprland.activeToplevel, whose hydration wedged on a long-lived
+    // instance (Quickshell 0.3.1 + Hyprland 0.56.2) and froze the parallax
+    // permanently ON; raw-payload parsing alone misses the empty-workspace
+    // unfreeze. All state flows through this one process, so hot-reloads
+    // can't desync QML-driven process management.
+    Process {
+        running: true
+        command: ["python3", "-u", "-c",
+            "import socket, os, json, time, select, ctypes, signal\n" +
+            "ctypes.CDLL('libc.so.6', use_errno=True).prctl(1, signal.SIGTERM)\n" +
+            "sig = os.environ.get('HYPRLAND_INSTANCE_SIGNATURE', '')\n" +
+            "base = f\"/run/user/{os.getuid()}/hypr/{sig}\"\n" +
+            "EV = ('activewindow', 'activewindowv2', 'workspace', 'workspacev2',\n" +
+            "      'focusedmon', 'openwindow', 'closewindow', 'movewindow',\n" +
+            "      'changefloatingmode', 'activespecial')\n" +
+            "def q(cmd):\n" +
+            "    try:\n" +
+            "        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n" +
+            "        s.settimeout(2)\n" +
+            "        s.connect(base + '/.socket.sock')\n" +
+            "        s.sendall(cmd)\n" +
+            "        data = b''\n" +
+            "        while True:\n" +
+            "            c = s.recv(65536)\n" +
+            "            if not c: break\n" +
+            "            data += c\n" +
+            "        s.close()\n" +
+            "        return data\n" +
+            "    except Exception:\n" +
+            "        return None\n" +
+            "def qfocus():\n" +
+            "    # wallpaper showing <=> the FOCUSED monitor's active workspace has no\n" +
+            "    # mapped clients. j/activewindow is globally sticky (reports the last\n" +
+            "    # window even after mouse crossover to an empty monitor), so it cannot\n" +
+            "    # answer this; monitors+clients can.\n" +
+            "    try:\n" +
+            "        mon = json.loads(q(b'j/monitors') or '[]')\n" +
+            "        ws = None\n" +
+            "        for m in mon:\n" +
+            "            if m.get('focused'):\n" +
+            "                ws = (m.get('activeWorkspace') or {}).get('id')\n" +
+            "                break\n" +
+            "        if ws is None:\n" +
+            "            return None\n" +
+            "        cl = json.loads(q(b'j/clients') or '[]')\n" +
+            "        for c in cl:\n" +
+            "            if c.get('mapped') and (c.get('workspace') or {}).get('id') == ws:\n" +
+            "                return 1\n" +
+            "        return 0\n" +
+            "    except Exception:\n" +
+            "        return None\n" +
+            "def qcursor():\n" +
+            "    d = q(b'cursorpos')\n" +
+            "    if d is None: return None\n" +
+            "    p = d.decode(errors='ignore').strip().split(',')\n" +
+            "    return p[0] + ',' + p[1] if len(p) >= 2 else None\n" +
+                        "focused = None\n" +
+            "def seeFocus():\n" +
+            "    global focused\n" +
+            "    f = qfocus()\n" +
+            "    if f is not None and f != focused:\n" +
+            "        focused = f\n" +
+            "        print('F ' + str(f), flush=True)\n" +
+            "while True:\n" +
+            "    try:\n" +
+            "        seeFocus()\n" +
+            "        s2 = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n" +
+            "        s2.connect(base + '/' + '.socket2.sock')\n" +
+            "        s2.setblocking(False)\n" +
+            "        buf = b''\n" +
+            "        nextpoll = 0.0\n" +
+            "        nextfocus = 0.0\n" +
+            "        while True:\n" +
+            "            r, _, _ = select.select([s2], [], [], 0.05)\n" +
+            "            now = time.time()\n" +
+            "            if r:\n" +
+            "                chunk = s2.recv(4096)\n" +
+            "                if not chunk: break\n" +
+            "                buf += chunk\n" +
+            "                while b'\\n' in buf:\n" +
+            "                    line, buf = buf.split(b'\\n', 1)\n" +
+            "                    ev = line.decode(errors='ignore').split('>>', 1)[0]\n" +
+            "                    if ev in EV:\n" +
+            "                        seeFocus()\n" +
+            "            if now >= nextfocus:\n" +
+            "                seeFocus()\n" +
+            "                nextfocus = now + 0.4\n" +
+            "            if focused == 0 and now >= nextpoll:\n" +
+            "                c = qcursor()\n" +
+            "                if c: print('C ' + c, flush=True)\n" +
+            "                nextpoll = now + 0.1\n" +
+            "    except Exception:\n" +
+            "        time.sleep(1)\n"]
+        stdout: SplitParser {
+            onRead: data => {
+                const d = data.trim();
+                if (d.startsWith("F ")) {
+                    // helper semantics: F 1 = a window has focus (j/activewindow
+                    // returned an address), F 0 = no focused window -> wallpaper
+                    // is showing. INVERTED from window-focus on purpose.
+                    const wallpaperFocused = d.substring(2) === "0";
+                    if (wallpaperFocused !== RoomState.wallpaperFocused) {
+                        RoomState.wallpaperFocused = wallpaperFocused;
+                        Sfx.setAmbientFocus(wallpaperFocused);
+                    }
+                } else if (d.startsWith("C ")) {
+                    const parts = d.substring(2).split(",");
+                    const cx = parseFloat(parts[0]);
+                    const cy = parseFloat(parts[1]);
+                    if (!isNaN(cx) && !isNaN(cy)) {
+                        Cursor.gx = cx;
+                        Cursor.gy = cy;
+                    }
+                }
+            }
+        }
+    }
+
     // workspace tracking -> RoomState. focusedmon only updates the room
     // label/ambient; dialogue fires only on a real workspace switch
     Connections {
         target: Hyprland
 
         function onRawEvent(event) {
-            // background mode: wallpaper is focused <=> no window has focus.
-            // NOTE: Hyprland.activeToplevel never resolves on this combo
-            // (Quickshell 0.3.1 + 0.56 lua build), so derive focus from the
-            // raw activewindow payload instead: "class,title" with a
-            // focused window, "," (or empty) when only the desktop has
-            // focus. Hyprland fires activewindow on every focus change,
-            // including switching to an empty workspace.
-            if (event.name === "activewindow") {
-                const data = (event.data ?? "").replace(/,/g, "").trim();
-                const focused = data.length > 0;   // a WINDOW has focus
-                // wallpaperFocused = desktop focused = NOT window-focused
-                // (the original code assigned this inverted — parallax ran
-                // exactly when it should have been frozen)
-                if (focused === RoomState.wallpaperFocused) {
-                    RoomState.wallpaperFocused = !focused;
-                    Sfx.setAmbientFocus(!focused);
-                }
-            }
-
+            // NOTE: focus/background-mode tracking lives in the Process above
+            // (authoritative j/activewindow queries); this handler is only
+            // for workspace/room tracking.
             if (event.name === "workspace") {
                 const m = Hyprland.focusedMonitor;
                 if (m?.activeWorkspace)
@@ -185,30 +292,8 @@ ShellRoot {
         }
     }
 
-    // startup focus sync: rawEvent only fires on CHANGE, so if the shell
-    // boots with a window already focused, wallpaperFocused would stay stuck
-    // on its desktop-focused default until the first focus change
-    Process {
-        id: focusProbe
-        command: ["sh", "-c", "hyprctl activewindow -j 2>/dev/null"]
-        stdout: SplitParser {
-            onRead: data => {
-                let focused = false;
-                try {
-                    const j = JSON.parse(data);
-                    focused = !!j && j.address !== undefined && j.address !== "0x0";
-                } catch (e) { focused = false; }   // "Invalid" when desktop
-                if (focused !== RoomState.wallpaperFocused) {
-                    RoomState.wallpaperFocused = focused;
-                    Sfx.setAmbientFocus(focused);
-                }
-            }
-        }
-    }
-
     Component.onCompleted: {
         ensureFont();
-        focusProbe.running = true;
         const r = RoomState.rooms[String(RoomState.currentWs)];
         if (r?.ambient)
             Sfx.ambient(r.ambient);

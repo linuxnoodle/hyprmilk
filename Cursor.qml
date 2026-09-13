@@ -1,75 +1,18 @@
 pragma Singleton
 
 import Quickshell
-import Quickshell.Io
 import QtQuick
 
-// Global pointer position via the Hyprland IPC socket (Synoptik pattern):
-// ONE persistent python client polls `cursorpos` and streams to SplitParser.
-// Battery: the client only emits on CHANGE and its poll rate decays from
-// 10Hz (moving) to 1Hz (at rest) — an idle cursor has nothing to parallax,
-// so it must not wake the machine. The poller also dies entirely while a
-// window has focus (parallax frozen anyway); gx/gy keep their last values,
-// matching the freeze design.
+// Global pointer position + focus state source. The actual work lives in a
+// single python helper owned by shell.qml (socket2 listener + cursorpos/focus
+// queries, self-gated on focus): it streams "C x,y" cursor samples (only
+// while the wallpaper is focused — CPU idles when a window has focus) and
+// "F 1/0" focus transitions into the SplitParser there. This singleton just
+// carries the state.
 Singleton {
     id: root
 
     property real gx: -1
     property real gy: -1
     readonly property bool ready: gx >= 0
-
-    readonly property bool active: Theme.parallaxEnabled && RoomState.wallpaperFocused
-
-    Process {
-        running: Cursor.active
-        command: ["python3", "-u", "-c",
-            "import socket, os, sys, time\n" +
-            "sig = os.environ.get('HYPRLAND_INSTANCE_SIGNATURE', '')\n" +
-            "path = f'/run/user/{os.getuid()}/hypr/{sig}/.socket.sock'\n" +
-            "ppid = os.getppid()\n" +
-            "last = ''\n" +
-            "idle = 0\n" +
-            "while True:\n" +
-            "    # if our qs parent died, we would be reparented — exit so a\n" +
-            "    # stale poller can never outlive the shell that spawned it\n" +
-            "    if os.getppid() != ppid:\n" +
-            "        sys.exit(0)\n" +
-            "    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n" +
-            "    try:\n" +
-            "        s.connect(path)\n" +
-            "        s.sendall(b'cursorpos')\n" +
-            "        data = b''\n" +
-            "        while True:\n" +
-            "            c = s.recv(256)\n" +
-            "            if not c: break\n" +
-            "            data += c\n" +
-            "        pos = data.decode('utf-8', errors='ignore').strip()\n" +
-            "        if pos != last:\n" +
-            "            last = pos\n" +
-            "            idle = 0\n" +
-            "            print(pos, flush=True)\n" +
-            "        else:\n" +
-            "            idle += 1\n" +
-            "    except Exception: pass\n" +
-            "    finally: s.close()\n" +
-            "    # 10Hz while moving, backs off to 1Hz at rest\n" +
-            "    if idle < 20: delay = 0.1\n" +
-            "    elif idle < 60: delay = 0.25\n" +
-            "    elif idle < 240: delay = 0.5\n" +
-            "    else: delay = 1.0\n" +
-            "    time.sleep(delay)"]
-        stdout: SplitParser {
-            onRead: data => {
-                const parts = data.trim().split(",");
-                if (parts.length >= 2) {
-                    const cx = parseFloat(parts[0]);
-                    const cy = parseFloat(parts[1]);
-                    if (!isNaN(cx) && !isNaN(cy)) {
-                        root.gx = cx;
-                        root.gy = cy;
-                    }
-                }
-            }
-        }
-    }
 }
