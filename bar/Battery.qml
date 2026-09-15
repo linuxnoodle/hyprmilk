@@ -16,14 +16,14 @@ Rectangle {
     readonly property var dev: UPower.displayDevice
     readonly property bool charging: dev?.state === UPowerDeviceState.Charging
     readonly property bool full: dev?.state === UPowerDeviceState.Full
-    readonly property real pct: Math.round(dev?.percentage ?? 0)
+    readonly property real pct: Math.round((dev?.percentage ?? 0) * 100)  // qs UPower: 0..1 fraction
     // seconds until empty (discharging) / full (charging); 0 = unknown
     readonly property int secs: charging ? (dev?.timeToFull ?? 0)
                                          : (dev?.timeToEmpty ?? 0)
     readonly property bool low: !charging && !full && pct <= 15
 
     // desktops: displayDevice is an AC line at 0% — hide rather than read 0%
-    visible: (dev?.percentage ?? 0) > 0
+    visible: (dev?.percentage ?? 0) > 0.001
 
     color: "transparent"
     implicitWidth: batIcon.width + label.implicitWidth + 5
@@ -34,7 +34,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         kind: "battery"
         active: !root.low
-        level: (root.dev?.percentage ?? 0) / 100
+        level: root.dev?.percentage ?? 0
     }
 
     Text {
